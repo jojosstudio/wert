@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Wallet-Übersicht • POS Wallet</title>
+  <style>
+    :root{
+      --bg:#0b0e12; --bg2:#0f1622; --text:#e9eef6; --muted:#a7b6c6;
+      --accent:#59dbc9; --accent-2:#7fe6d9; --border:rgba(255,255,255,0.12);
+      --glass:rgba(255,255,255,0.06); --blur:14px;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+      --curve:cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html[data-theme="oled"]{
+      --bg:#000000; --bg2:#000000;
+      --text:#f2f2f2; --muted:#9da6af;
+      --accent:#00e5c3; --accent-2:#66f2df;
+      --border:rgba(255,255,255,0.10);
+      --glass:rgba(255,255,255,0.04);
+      --blur:10px;
+      --shadow:0 8px 22px rgba(0,0,0,.55);
+    }
+    html,body{
+      height:100%;
+      background: radial-gradient(1200px 600px at 15% 0%, var(--bg2), var(--bg) 50%);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0;
+    }
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 16px;
+      background:linear-gradient(180deg, rgba(0,0,0,.22), transparent);
+      border-bottom:1px solid rgba(255,255,255,.05);
+      backdrop-filter:blur(6px);
+    }
+    .brand{ font-weight:900; letter-spacing:.3px; }
+    .container{ max-width:1200px; margin:18px auto; padding:0 16px; display:grid; grid-template-columns:1fr; gap:16px; }
+
+    .card{
+      border-radius:16px; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));
+      backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      transition:transform 220ms var(--curve), box-shadow 220ms var(--curve);
+    }
+    .card:hover{ transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
+    .inner{ padding:16px; }
+    h1{ margin:0 0 8px; font-size:22px; font-weight:800; letter-spacing:.2px; }
+    .sub{ color:var(--muted); font-size:12px; margin:0 0 12px; }
+
+    .btn{
+      border:1px solid var(--border); border-radius:12px;
+      background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.04));
+      color:var(--text); padding:10px 14px; font-weight:800; cursor:pointer;
+      transition:transform 160ms var(--curve), background 160ms var(--curve), border-color 160ms var(--curve), box-shadow 160ms var(--curve);
+    }
+    .btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 8px 24px rgba(0,0,0,.28); }
+    .btn:active{ transform:translateY(0) scale(.99); }
+    .btn.primary{ border-color:rgba(89,219,201,.55); background:linear-gradient(180deg,rgba(89,219,201,.28),rgba(89,219,201,.14)); }
+
+    input[type=text], select{
+      width:auto; min-width:220px; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,0.065); color:var(--text); font-size:14px; outline:none;
+      transition:border-color 170ms var(--curve), box-shadow 170ms var(--curve), transform 170ms var(--curve);
+    }
+    input:focus, select:focus{ border-color:rgba(89,219,201,.55); box-shadow:0 0 0 8px rgba(89,219,201,.14); transform:translateY(-1px); }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    /* Tabelle */
+    .table{ width:100%; border-collapse:separate; border-spacing:0 8px; }
+    .tr{
+      display:grid; grid-template-columns: 1fr 200px; gap:10px;
+      padding:10px; border:1px solid var(--border); border-radius:12px;
+      background:rgba(255,255,255,.05); align-items:center;
+      transition:transform 160ms var(--curve), background 160ms var(--curve);
+    }
+    .tr:hover{ transform:translateY(-1px); background:rgba(255,255,255,.07); }
+    .th{ color:var(--muted); font-weight:800; }
+    .td-num{ text-align:right; font-variant-numeric:tabular-nums; }
+
+    .kpi{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+    .chip{
+      padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,.06); font-weight:800;
+    }
+    .chip.net{ color:#59dbc9; }
+
+    .progress-banner{
+      position:fixed; right:16px; top:16px; z-index:999;
+      padding:8px 12px; border-radius:10px; border:1px solid var(--border);
+      background:rgba(255,255,255,.06); font-weight:800; color:var(--text);
+      opacity:0; transform:translateY(-10px); transition:opacity 200ms var(--curve), transform 200ms var(--curve);
+      box-shadow:var(--shadow);
+    }
+    .progress-banner.show{ opacity:1; transform:translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">POS Wallet • Wallet-Übersicht</div>
+    <div class="row">
+      <button id="toggleThemeBtn" class="btn">Theme</button>
+      <a class="btn" href="/admin">Admin</a>
+      <a class="btn" href="/">Zur App</a>
+      <a class="btn" href="/logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card"><div class="inner">
+      <h1>Wallets</h1>
+      <p class="sub">Alle registrierten Wallets mit aktuellem Kontostand (cp)</p>
+
+      <div class="row" style="justify-content:space-between">
+        <div class="row">
+          <input type="text" id="q" placeholder="Suche nach Token (Teilstring)"/>
+          <select id="limit">
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000" selected>1000</option>
+            <option value="5000">5000</option>
+          </select>
+          <button class="btn" id="btnLoad">Laden</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnCSV">CSV Export</button>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="chip">Anzahl: <span id="kCount">0</span></div>
+        <div class="chip net">Summe: <span id="kSum">0 cp</span></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="tr th">
+          <div>Token</div><div class="td-num">Kontostand</div>
+        </div>
+        <div id="rows" style="display:grid; gap:8px;"></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div id="progressBanner" class="progress-banner" aria-live="polite"></div>
+
+  <script>
+    // Theme Toggle (Dark / OLED)
+    (function(){
+      const html = document.documentElement;
+      const KEY = 'ui_theme';
+      function getSaved(){ try{ return localStorage.getItem(KEY) || 'dark'; }catch(e){ return 'dark'; } }
+      function setSaved(v){ try{ localStorage.setItem(KEY, v); }catch(e){} }
+      function banner(text){
+        const el = document.getElementById('progressBanner');
+        el.textContent = text;
+        el.classList.add('show');
+        setTimeout(()=>el.classList.remove('show'), 1200);
+      }
+      const current = getSaved();
+      html.setAttribute('data-theme', current);
+      document.getElementById('toggleThemeBtn').addEventListener('click', ()=>{
+        const next = html.getAttribute('data-theme') === 'oled' ? 'dark' : 'oled';
+        html.setAttribute('data-theme', next); setSaved(next); banner('Theme: '+(next==='oled'?'OLED Minimal':'Dark'));
+      });
+    })();
+
+    async function loadWallets(){
+      const q = document.getElementById('q').value.trim();
+      const limit = parseInt(document.getElementById('limit').value || '1000', 10);
+      const url = new URL(location.origin + '/api/admin/wallets');
+      if(q) url.searchParams.set('q', q);
+      url.searchParams.set('limit', String(limit));
+      const r = await fetch(url);
+      if(!r.ok){
+        alert('Fehler beim Laden ('+r.status+')');
+        return;
+      }
+      const data = await r.json();
+      renderRows(Array.isArray(data) ? data : []);
+    }
+
+    function renderRows(items){
+      const rows = document.getElementById('rows');
+      rows.innerHTML = '';
+      let sum = 0;
+      items.forEach(it=>{
+        sum += parseInt(it.balance_cents||0);
+        const div = document.createElement('div');
+        div.className = 'tr';
+        div.innerHTML = `
+          <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${it.token_id}</div>
+          <div class="td-num">${parseInt(it.balance_cents||0)} cp</div>
+        `;
+        rows.appendChild(div);
+      });
+      document.getElementById('kCount').textContent = items.length;
+      document.getElementById('kSum').textContent = sum + ' cp';
+    }
+
+    document.getElementById('btnLoad').addEventListener('click', loadWallets);
+
+    document.getElementById('btnCSV').addEventListener('click', ()=>{
+      const rows = document.getElementById('rows').children;
+      const headers = ['Token','Kontostand(cp)'];
+      const lines = [headers.join(';')];
+      Array.from(rows).forEach(n=>{
+        const cols = Array.from(n.children).map(c=>c.textContent.replaceAll(';',','));
+        lines.push(cols.join(';'));
+      });
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob); const a = document.createElement('a');
+      a.href = url; a.download = 'wallets.csv'; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Initial
+    window.addEventListener('DOMContentLoaded', loadWallets);
+  </script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Automation • POS Wallet (Admin)</title>
+  <style>
+    :root{
+      --bg:#0b0e12; --bg2:#0f1622; --text:#e9eef6; --muted:#a7b6c6;
+      --accent:#59dbc9; --accent-2:#7fe6d9; --border:rgba(255,255,255,0.12);
+      --glass:rgba(255,255,255,0.06); --blur:14px;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+      --curve:cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html[data-theme="oled"]{
+      --bg:#000000; --bg2:#000000;
+      --text:#f2f2f2; --muted:#9da6af;
+      --accent:#00e5c3; --accent-2:#66f2df;
+      --border:rgba(255,255,255,0.10);
+      --glass:rgba(255,255,255,0.04);
+      --blur:10px;
+      --shadow:0 8px 22px rgba(0,0,0,.55);
+    }
+    html,body{
+      height:100%;
+      background: radial-gradient(1200px 600px at 15% 0%, var(--bg2), var(--bg) 50%);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0;
+    }
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      padding:12px 18px;
+      background:linear-gradient(180deg, rgba(0,0,0,.22), transparent);
+      border-bottom:1px solid rgba(255,255,255,.05);
+      backdrop-filter:blur(6px);
+    }
+    .brand{ font-weight:900; letter-spacing:.3px; font-size:18px; }
+    .container{
+      max-width:1100px; margin:16px auto; padding:0 18px;
+      display:grid; grid-template-columns:1.2fr .8fr; gap:16px;
+    }
+    @media (max-width:980px){ .container{ grid-template-columns:1fr; } }
+
+    .card{
+      border-radius:18px; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));
+      backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      transition:transform 220ms var(--curve), box-shadow 220ms var(--curve);
+    }
+    .card:hover{ transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
+    .inner{ padding:16px; }
+    h1{ margin:0 0 8px; font-size:24px; font-weight:900; letter-spacing:.3px; }
+    .sub{ color:var(--muted); font-size:14px; margin:0 0 12px; }
+
+    .btn{
+      border:1px solid var(--border); border-radius:14px;
+      background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.04));
+      color:var(--text); padding:12px 16px; font-weight:800; cursor:pointer; font-size:16px;
+      transition:transform 160ms var(--curve), background 160ms var(--curve), border-color 160ms var(--curve), box-shadow 160ms var(--curve);
+    }
+    .btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 8px 24px rgba(0,0,0,.28); }
+    .btn:active{ transform:translateY(0) scale(.99); }
+    .btn.primary{ border-color:rgba(89,219,201,.55); background:linear-gradient(180deg,rgba(89,219,201,.28),rgba(89,219,201,.14)); }
+    .status{ color:var(--muted); font-size:14px; margin-left:auto; }
+
+    .scanner{ display:grid; grid-template-columns:1fr; gap:12px; }
+    video#previewAuto{
+      width:100%; aspect-ratio:4/3;
+      border-radius:16px;
+      border:1px solid var(--border); background:#000;
+      box-shadow:0 8px 24px rgba(0,0,0,.35);
+    }
+
+    .vitrine{
+      display:flex; align-items:center; justify-content:center;
+      padding:18px; border-radius:18px; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--glass),rgba(255,255,255,.05));
+      min-height:150px;
+    }
+    .headline{ font-size:28px; font-weight:900; letter-spacing:.3px; }
+    .msg{ font-weight:800; letter-spacing:.2px; color:#a7b6c6; margin-top:8px; font-size:16px; }
+
+    .countdown{ width:84px; height:84px; margin-left:auto; }
+    .ring-bg{ stroke:rgba(255,255,255,.18); }
+    .ring-fg{ stroke:#59dbc9; filter: drop-shadow(0 2px 6px rgba(89,219,201,.35)); }
+
+    .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+
+    .popup{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9999;
+      background:rgba(0,0,0,.35);
+    }
+    .popup.show{ display:flex; }
+    .popup-card{
+      width:min(90vw, 520px);
+      border-radius:20px; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.06));
+      backdrop-filter:blur(12px);
+      box-shadow:0 18px 42px rgba(0,0,0,.45);
+      padding:22px;
+      text-align:center;
+      animation: pop 180ms var(--curve);
+    }
+    @keyframes pop { from{ transform:scale(.96); opacity:.0; } to { transform:scale(1); opacity:1; } }
+    .popup-title{ font-size:26px; font-weight:900; letter-spacing:.3px; margin-bottom:6px; }
+    .popup-value{ font-size:32px; font-weight:900; color:#59dbc9; margin-bottom:10px; }
+    .popup-sub{ color:var(--muted); font-size:14px; }
+
+    .progress-banner{
+      position:fixed; right:16px; top:16px; z-index:999;
+      padding:8px 12px; border-radius:10px; border:1px solid var(--border);
+      background:rgba(255,255,255,.06); font-weight:800; color:var(--text);
+      opacity:0; transform:translateY(-10px); transition:opacity 200ms var(--curve), transform 200ms var(--curve);
+      box-shadow:var(--shadow);
+    }
+    .progress-banner.show{ opacity:1; transform:translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">POS Wallet • Automation (Admin)</div>
+    <div class="row">
+      <button class="btn" id="toggleThemeBtn">Theme</button>
+      <a class="btn" href="/admin">Admin</a>
+      <a class="btn" href="/">Zur App</a>
+      <a class="btn" href="/logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card"><div class="inner">
+      <h1>Automation</h1>
+      <p class="sub">Starte mit dem Scannen: Halte den QR‑Code ruhig im Rahmen. Nach dem Scan erscheint dein Kontostand als Popup und verschwindet automatisch.</p>
+
+      <div class="scanner">
+        <video id="previewAuto" playsinline muted autoplay></video>
+        <div class="row" style="justify-content:space-between">
+          <div class="row">
+            <button class="btn primary" id="startBtn">Scan starten</button>
+            <button class="btn" id="stopBtn">Stop</button>
+            <button class="btn" id="pickBtn">Kamera wählen</button>
+          </div>
+          <span id="status" class="status">Bereit</span>
+        </div>
+      </div>
+    </div></div>
+
+    <div class="card"><div class="inner">
+      <div class="vitrine">
+        <div style="flex:1">
+          <div class="headline" id="headline">Starte mit dem Scannen</div>
+          <div class="msg" id="hintText">Halte den QR‑Code ruhig im Kamerabild, bis eine Bestätigung erscheint.</div>
+        </div>
+        <svg class="countdown" viewBox="0 0 64 64" aria-hidden="true">
+          <circle class="ring-bg" cx="32" cy="32" r="26" fill="none" stroke-width="6"/>
+          <circle class="ring-fg" id="ring" cx="32" cy="32" r="26" fill="none" stroke-width="6"
+                  stroke-linecap="round" stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
+        </svg>
+      </div>
+    </div></div>
+  </div>
+
+  <div id="popup" class="popup" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="popup-card">
+      <div class="popup-title" id="popTitle">Scan erfolgreich</div>
+      <div class="popup-value" id="popValue">Du hast 0 cp</div>
+      <div class="popup-sub" id="popSub">Diese Anzeige schließt automatisch in 5 Sekunden.</div>
+    </div>
+  </div>
+
+  <div id="progressBanner" class="progress-banner" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script>
+    // Theme Toggle (Dark / OLED) + Banner
+    (function(){
+      const html = document.documentElement;
+      const KEY = 'ui_theme';
+      function getSaved(){ try{ return localStorage.getItem(KEY) || 'dark'; }catch(e){ return 'dark'; } }
+      function setSaved(v){ try{ localStorage.setItem(KEY, v); }catch(e){} }
+      function banner(text){
+        const el = document.getElementById('progressBanner');
+        el.textContent = text;
+        el.classList.add('show');
+        setTimeout(()=>el.classList.remove('show'), 1200);
+      }
+      const current = getSaved();
+      html.setAttribute('data-theme', current);
+      document.getElementById('toggleThemeBtn').addEventListener('click', ()=>{
+        const next = html.getAttribute('data-theme') === 'oled' ? 'dark' : 'oled';
+        html.setAttribute('data-theme', next); setSaved(next); banner('Theme: '+(next==='oled'?'OLED Minimal':'Dark'));
+      });
+    })();
+
+    // Logout erzwingen beim Verlassen der Seite
+    window.addEventListener('pagehide', async ()=>{
+      try { await fetch('/logout', { method:'POST' }); } catch(e){}
+    });
+
+    // Scanner-UI-Refs
+    const video = document.getElementById('previewAuto');
+    const statusEl = document.getElementById('status');
+    const headline = document.getElementById('headline');
+    const hintText = document.getElementById('hintText');
+    const ring = document.getElementById('ring');
+    const popup = document.getElementById('popup');
+    const popTitle = document.getElementById('popTitle');
+    const popValue = document.getElementById('popValue');
+    const popSub = document.getElementById('popSub');
+
+    let stream=null, animId=null, lastToken=null, lastSeenAt=0;
+    const COOLDOWN_MS = 2500;
+
+    // ===== Audio: Oscillator Beep + "Cha-Ching"-Artiger Doppelton =====
+    let audioCtx=null;
+    function getAudioCtx(){
+      if(audioCtx) return audioCtx;
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+      return audioCtx;
+    }
+    // kurzer Beep (wie in deinem aktuellen Code)
+    function beep({duration=0.12, frequency=1100, type='sine', volume=0.10, attack=0.01, release=0.08}={}){
+      const ctx=getAudioCtx(); if(!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+      const now = ctx.currentTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(volume, now + attack);
+      gain.gain.linearRampToValueAtTime(0, now + attack + duration + release);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + attack + duration + release);
+    }
+    // deDing: zwei kurze Töne (de -> ding) als „Cash“-Feedback
+    function deDing(){
+      // tiefer kurzer Ton
+      beep({frequency:740, duration:0.09, volume:0.12, type:'triangle'});
+      // nach kurzer Pause höherer Ton
+      setTimeout(()=>beep({frequency:1175, duration:0.12, volume:0.14, type:'sine'}), 100);
+    }
+    // Audio-Unlock nach erster User-Geste (iOS/Chrome Autoplay Policy)
+    ['click','keydown','touchstart'].forEach(evt=>{
+      window.addEventListener(evt, ()=>{ try{ getAudioCtx()?.resume(); }catch(e){} }, { once:true, passive:true });
+    });
+
+    function supportsMedia(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
+    async function listCams(){ const dev=await navigator.mediaDevices.enumerateDevices(); return dev.filter(d=>d.kind==='videoinput'); }
+
+    async function startScan(deviceId=null){
+      if(!supportsMedia()){ statusEl.textContent='Kein Kamera-Zugriff (HTTPS/localhost erforderlich)'; return; }
+      try{
+        const constraints = deviceId
+          ? { video:{ deviceId:{ exact:deviceId } }, audio:false }
+          : { video:{ facingMode:{ ideal:'environment' } }, audio:false };
+        stream=await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject=stream;
+        await video.play();
+        statusEl.textContent='Kamera läuft';
+        scanLoop();
+      }catch(e){
+        try{
+          const fallback = deviceId ? { video:{ deviceId:{ exact:deviceId } }, audio:false } : { video:true, audio:false };
+          stream=await navigator.mediaDevices.getUserMedia(fallback);
+          video.srcObject=stream; await video.play();
+          statusEl.textContent='Kamera läuft (Fallback)';
+          scanLoop();
+        }catch(e2){
+          statusEl.textContent='Kamera-Fehler: '+e2.name;
+          console.error(e2);
+        }
+      }
+    }
+    function stopScan(){
+      if(animId) cancelAnimationFrame(animId);
+      if(stream) stream.getTracks().forEach(t=>t.stop());
+      video.srcObject=null;
+      statusEl.textContent='Stop';
+    }
+    async function pickCamera(){
+      const cams=await listCams(); if(!cams.length){ alert('Keine Kameras gefunden'); return; }
+      const choice=prompt('Kameras:\n'+cams.map((c,i)=>`${i}: ${c.label||('Kamera '+i)}`).join('\n')+'\nNummer eingeben:');
+      const idx=parseInt(choice); if(Number.isInteger(idx)&&cams[idx]){ const id=cams[idx].deviceId; stopScan(); startScan(id); }
+    }
+
+    function scanLoop(){
+      const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
+      const tick=()=>{ if(!video.videoWidth){ animId=requestAnimationFrame(tick); return; }
+        canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+        ctx.drawImage(video,0,0,canvas.width,canvas.height);
+        const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+        const res=jsQR(img.data,img.width,img.height); const now=Date.now();
+        if(res && res.data){
+          const token=res.data.trim();
+          if(token!==lastToken || (now-lastSeenAt)>COOLDOWN_MS){
+            lastToken=token; lastSeenAt=now;
+            onToken(token);
+          } else {
+            statusEl.textContent='Gefunden (Wartezeit)';
+          }
+        } else { statusEl.textContent='Suche QR…'; }
+        animId=requestAnimationFrame(tick);
+      }; tick();
+    }
+
+    async function onToken(token){
+      statusEl.textContent='Token erkannt';
+      headline.textContent='Prüfe Kontostand…';
+      hintText.textContent='Bitte kurz warten.';
+
+      // Beep: QR erkannt (nur wenn neuer Token bzw. nach Cooldown)
+      beep();
+
+      try{
+        const r = await fetch('/api/wallets/'+encodeURIComponent(token));
+        const d = await r.json();
+        if(r.ok && d && typeof d.balance_cents !== 'undefined'){
+          // Cash-Feedback: deDing
+          deDing();
+
+          showPopup(parseInt(d.balance_cents||0));
+          headline.textContent='Scan erfolgreich';
+          hintText.textContent='Bereit für den nächsten Scan.';
+          startCountdown(5, ()=>{});
+        } else {
+          showPopup(null, 'Wallet nicht gefunden', 'Bitte erneut scannen.');
+          headline.textContent='Wallet nicht gefunden';
+          hintText.textContent='Bitte erneut scannen.';
+          startCountdown(3);
+        }
+      }catch(e){
+        showPopup(null, 'Netzwerkfehler', 'Bitte erneut versuchen.');
+        headline.textContent='Netzwerkfehler';
+        hintText.textContent='Bitte erneut versuchen.';
+        startCountdown(3);
+      }
+    }
+
+    function showPopup(cpValue, title='Scan erfolgreich', sub='Diese Anzeige schließt automatisch in 5 Sekunden.'){
+      popTitle.textContent = title;
+      if(cpValue !== null && !Number.isNaN(cpValue)){
+        popValue.textContent = 'Du hast ' + cpValue + ' cp';
+      } else {
+        popValue.textContent = '';
+      }
+      popSub.textContent = sub;
+      popup.classList.add('show');
+      setTimeout(()=>{
+        popup.classList.remove('show');
+        resetVitrine();
+      }, 5000);
+    }
+
+    function startCountdown(seconds, onDone){
+      const CIRC = 2 * Math.PI * 26;
+      ring.setAttribute('stroke-dasharray', String(CIRC));
+      ring.setAttribute('stroke-dashoffset', String(CIRC));
+
+      const start = performance.now();
+      const dur = seconds * 1000;
+      function step(ts){
+        const p = Math.min(1, (ts - start) / dur);
+        ring.setAttribute('stroke-dashoffset', String(CIRC * (1 - p)));
+        if(p < 1) requestAnimationFrame(step);
+        else { setTimeout(()=>{ onDone && onDone(); }, 80); }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function resetVitrine(){
+      headline.textContent='Starte mit dem Scannen';
+      hintText.textContent='Halte den QR‑Code ruhig im Kamerabild, bis eine Bestätigung erscheint.';
+      const CIRC = 2 * Math.PI * 26;
+      ring.setAttribute('stroke-dashoffset', String(CIRC));
+    }
+
+    document.getElementById('startBtn').addEventListener('click', ()=>{
+      // Audio nach User-Geste entsperren
+      try{ getAudioCtx()?.resume(); }catch(e){}
+      startScan();
+    });
+    document.getElementById('stopBtn').addEventListener('click', ()=>stopScan());
+    document.getElementById('pickBtn').addEventListener('click', ()=>{
+      try{ getAudioCtx()?.resume(); }catch(e){}
+      pickCamera();
+    });
+
+    // Automatischer Kamerastart (Audio bleibt bis zur Nutzer-Geste gesperrt)
+    window.addEventListener('DOMContentLoaded', ()=>{
+      try{
+        const saved = localStorage.getItem('ui_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+      }catch(e){}
+      startScan().catch(()=>{ /* Nutzer klickt "Scan starten" */ });
+    });
+  </script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

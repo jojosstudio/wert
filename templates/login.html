@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Login • POS Wallet</title>
+  <style>
+    :root{
+      --bg:#0b0e12; --bg2:#0f1622; --text:#e9eef6; --muted:#a7b6c6;
+      --accent:#59dbc9; --accent-2:#7fe6d9; --border:rgba(255,255,255,0.12);
+      --glass:rgba(255,255,255,0.06); --blur:14px;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+      --curve:cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html[data-theme="oled"]{
+      --bg:#000000; --bg2:#000000;
+      --text:#f2f2f2; --muted:#9da6af;
+      --accent:#00e5c3; --accent-2:#66f2df;
+      --border:rgba(255,255,255,0.10);
+      --glass:rgba(255,255,255,0.04);
+      --blur:10px;
+      --shadow:0 8px 22px rgba(0,0,0,.55);
+    }
+    html,body{
+      height:100%;
+      background: radial-gradient(1200px 600px at 15% 0%, var(--bg2), var(--bg) 50%);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0;
+    }
+    .wrap{
+      min-height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px 16px;
+    }
+    .card{
+      width:100%;
+      max-width:420px;
+      border-radius:16px; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));
+      backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      transition:transform 220ms var(--curve), box-shadow 220ms var(--curve), border-color 200ms var(--curve);
+      will-change:transform,box-shadow;
+    }
+    .card:hover{ transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
+    .inner{ padding:18px; }
+    h1{ margin:0 0 8px; font-size:22px; font-weight:800; letter-spacing:.2px; }
+    p.sub{ margin:0 0 14px; color:var(--muted); font-size:12px; }
+
+    label{ display:block; font-size:13px; margin:10px 0 6px; color:var(--muted); font-weight:700; letter-spacing:.2px; }
+    input[type=text], input[type=password]{
+      width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,0.065); color:var(--text); font-size:14px; outline:none;
+      transition:border-color 170ms var(--curve), box-shadow 170ms var(--curve), transform 170ms var(--curve);
+      will-change:transform,box-shadow;
+    }
+    input:focus{ border-color:rgba(89,219,201,.55); box-shadow:0 0 0 8px rgba(89,219,201,.14); transform:translateY(-1px); }
+
+    .btn{
+      border:1px solid var(--border); border-radius:12px;
+      background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.04));
+      color:var(--text); padding:10px 14px; font-weight:800; cursor:pointer;
+      transition:transform 160ms var(--curve), background 160ms var(--curve), border-color 160ms var(--curve), box-shadow 160ms var(--curve);
+      will-change:transform,box-shadow;
+    }
+    .btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 8px 24px rgba(0,0,0,.28); }
+    .btn:active{ transform:translateY(0) scale(.99); }
+    .btn.primary{ border-color:rgba(89,219,201,.55); background:linear-gradient(180deg,rgba(89,219,201,.28),rgba(89,219,201,.14)); }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .space{ height:10px; }
+
+    .msg{ min-height:20px; font-weight:800; letter-spacing:.2px; }
+    .msg.err{ color:#ff6b6b; }
+    .msg.ok{ color:#5bd59b; }
+    .status{ color:var(--muted); font-size:12px; margin-left:auto; }
+
+    .topbar{
+      position:fixed; left:0; right:0; top:0; display:flex; gap:10px; align-items:center;
+      padding:10px 12px;
+      background:linear-gradient(180deg, rgba(0,0,0,.22), transparent);
+      border-bottom:1px solid rgba(255,255,255,.05);
+      backdrop-filter:blur(6px);
+    }
+    .brand{ font-weight:900; letter-spacing:.3px; }
+
+    .progress-banner{
+      position:fixed; right:16px; top:16px; z-index:999;
+      padding:8px 12px; border-radius:10px; border:1px solid var(--border);
+      background:rgba(255,255,255,.06); font-weight:800; color:var(--text);
+      opacity:0; transform:translateY(-10px); transition:opacity 200ms var(--curve), transform 200ms var(--curve);
+      box-shadow:var(--shadow);
+    }
+    .progress-banner.show{ opacity:1; transform:translateY(0); }
+
+    @media (prefers-reduced-motion: reduce){
+      *{ transition:none !important; animation:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">POS Wallet</div>
+    <span class="status" id="status">Login</span>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="inner">
+        <h1>Anmelden</h1>
+        <p class="sub">Bitte mit Benutzername und Passwort einloggen</p>
+
+        {% if error %}
+          <div class="msg err">{{ error }}</div>
+        {% else %}
+          <div class="msg" aria-live="polite"></div>
+        {% endif %}
+
+        <form method="post" action="/login" style="margin-top:8px">
+          <label for="username">Benutzername</label>
+          <input id="username" name="username" type="text" autocomplete="username" required/>
+
+          <div class="space"></div>
+
+          <label for="password">Passwort</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required/>
+
+          <div class="space"></div>
+
+          <div class="row" style="justify-content:space-between; margin-top:4px">
+            <button class="btn primary" type="submit">Einloggen</button>
+            <button class="btn" type="button" id="toggleThemeBtn" title="Theme wechseln">Theme</button>
+          </div>
+        </form>
+
+        <p class="sub" style="margin-top:12px">Tipp: Admin-User zuerst einloggen und Passwort auf der Admin-Seite ändern.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="progressBanner" class="progress-banner" aria-live="polite"></div>
+
+  <script>
+    // Banner helper
+    function banner(text){
+      const el = document.getElementById('progressBanner');
+      el.textContent = text;
+      el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'), 1200);
+    }
+
+    // Theme Toggle (Dark / OLED)
+    (function(){
+      const html = document.documentElement;
+      const KEY = 'ui_theme';
+      function getSaved(){ try{ return localStorage.getItem(KEY) || 'dark'; }catch(e){ return 'dark'; } }
+      function setSaved(v){ try{ localStorage.setItem(KEY, v); }catch(e){} }
+      function apply(v){ html.setAttribute('data-theme', v); banner('Theme: ' + (v==='oled'?'OLED Minimal':'Dark')); }
+
+      const current = getSaved();
+      apply(current);
+
+      document.getElementById('toggleThemeBtn').addEventListener('click', ()=>{
+        const next = html.getAttribute('data-theme') === 'oled' ? 'dark' : 'oled';
+        apply(next); setSaved(next);
+      });
+    })();
+
+    // UX: Fokus auf Username
+    window.addEventListener('DOMContentLoaded', ()=>{
+      const u = document.getElementById('username');
+      if(u) try{ u.focus(); }catch(e){}
+    });
+  </script>
+</body>
+</html>

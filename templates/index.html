@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>POS Wallet • Kasse & Wallet</title>
+<style>
+:root{
+  --bg:#0b0e12; --bg2:#0f1622; --text:#e9eef6; --muted:#a7b6c6;
+  --accent:#59dbc9; --accent-2:#7fe6d9; --border:rgba(255,255,255,0.12);
+  --glass:rgba(255,255,255,0.06); --blur:14px;
+  --shadow:0 10px 28px rgba(0,0,0,.35);
+  --curve:cubic-bezier(0.22, 1, 0.36, 1); /* Smooth ease-out */
+}
+
+/* OLED Minimal Theme */
+html[data-theme="oled"]{
+  --bg:#000000; --bg2:#000000;
+  --text:#f2f2f2; --muted:#9da6af;
+  --accent:#00e5c3; --accent-2:#66f2df;
+  --border:rgba(255,255,255,0.10);
+  --glass:rgba(255,255,255,0.04);
+  --blur:10px;
+  --shadow:0 8px 22px rgba(0,0,0,.55);
+}
+
+html,body{
+  height:100%;
+  background:
+    radial-gradient(1200px 600px at 15% 0%, var(--bg2), var(--bg) 50%);
+  color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin:0;
+}
+h1{ margin:24px 16px 12px; font-size:22px; font-weight:800; letter-spacing:.2px; }
+
+.tabs{ display:flex; gap:10px; margin:0 16px 12px; flex-wrap:wrap; }
+.tab{
+  padding:8px 14px; border-radius:12px; border:1px solid var(--border);
+  cursor:pointer; background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));
+  transition:transform 180ms var(--curve), border-color 180ms var(--curve), background 180ms var(--curve), box-shadow 180ms var(--curve);
+  will-change:transform;
+}
+.tab:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 6px 20px rgba(0,0,0,.25); }
+.tab.active{
+  border-color:rgba(89,219,201,.50);
+  background:linear-gradient(180deg,rgba(89,219,201,.24),rgba(89,219,201,.10));
+}
+
+.container{ max-width:1200px; margin:0 auto; padding:8px 16px 28px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:1100px){ .container{ grid-template-columns:1fr } }
+
+.card{
+  border-radius:16px; border:1px solid var(--border);
+  background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));
+  backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+  transition:transform 220ms var(--curve), box-shadow 220ms var(--curve), border-color 200ms var(--curve);
+  will-change:transform,box-shadow;
+}
+.card:hover{ transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
+.inner{ padding:16px; }
+h2{ margin:0 0 10px; font-size:18px; font-weight:800; letter-spacing:.2px; }
+.sub{ color:var(--muted); font-size:12px; }
+
+input[type=text],input[type=number],input[type=date],select{
+  width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.065); color:var(--text); font-size:14px; outline:none;
+  transition:border-color 170ms var(--curve), box-shadow 170ms var(--curve), transform 170ms var(--curve);
+  will-change:transform,box-shadow;
+}
+input:focus,select:focus{ border-color:rgba(89,219,201,.55); box-shadow:0 0 0 8px rgba(89,219,201,.14); transform:translateY(-1px); }
+
+.btn{
+  border:1px solid var(--border); border-radius:12px;
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.04));
+  color:var(--text); padding:10px 14px; font-weight:700; cursor:pointer;
+  transition:transform 160ms var(--curve), background 160ms var(--curve), border-color 160ms var(--curve), box-shadow 160ms var(--curve);
+  will-change:transform,box-shadow;
+}
+.btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 8px 24px rgba(0,0,0,.28); }
+.btn:active{ transform:translateY(0) scale(.99); }
+.btn.primary{ border-color:rgba(89,219,201,.55); background:linear-gradient(180deg,rgba(89,219,201,.28),rgba(89,219,201,.14)); }
+.btn.action{ border-color:rgba(127,179,255,.40); }
+.btn.warn{ border-color:rgba(255,195,107,.45); }
+.btn.ghost{ background:transparent; }
+
+/* Micro-Badge für Summe beim Add-to-Cart */
+.badge-fly{
+  position:fixed; z-index:9999; pointer-events:none;
+  padding:6px 10px; border-radius:12px; border:1px solid rgba(89,219,201,.5);
+  background:rgba(89,219,201,.16); color:#cffff6; font-weight:800;
+  transform:translate(-50%, -50%) scale(.85);
+  box-shadow:0 8px 24px rgba(89,219,201,.25);
+  will-change:transform,opacity;
+}
+
+/* Grid & Items */
+.grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.item{
+  border:1px solid var(--border); border-radius:12px;
+  background:rgba(255,255,255,.06); padding:14px; cursor:pointer;
+  display:flex; flex-direction:column; gap:4px;
+  transition:transform 160ms var(--curve), background 170ms var(--curve), box-shadow 170ms var(--curve);
+  will-change:transform,box-shadow;
+}
+.item:hover{ transform:translateY(-2px) scale(1.02); box-shadow:0 10px 28px rgba(0,0,0,.3); }
+.item:active{ transform:translateY(0) scale(.99); }
+.item .name{ font-weight:800; letter-spacing:.2px; }
+.item .price{ color:var(--muted); }
+
+/* Cart */
+.cart{ display:grid; gap:10px; }
+.cart-item{
+  display:flex; justify-content:space-between; align-items:center;
+  border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,.05); padding:10px;
+  animation:cartEnter 280ms var(--curve);
+  will-change:transform,opacity;
+}
+@keyframes cartEnter{
+  from{ opacity:0; transform:translateY(8px) scale(.98); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+.cart-item.removing{ animation:cartExit 220ms var(--curve) forwards; }
+@keyframes cartExit{
+  to{ opacity:0; transform:translateY(-8px) scale(.98); }
+}
+.cart-item .qty{ display:flex; gap:6px; align-items:center; }
+.qty .btn{ padding:6px 10px; }
+.qty .btn:active{ transform:scale(.96); }
+.total{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+.total .sum{ font-size:20px; font-weight:900; letter-spacing:.3px; transition:transform 140ms var(--curve); }
+.total .sum.bump{ transform:scale(1.06); }
+
+/* Scanner */
+#preview,#previewWallet{
+  width:100%; aspect-ratio:16/10; border-radius:12px; border:1px solid var(--border); background:#000;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.status{ color:var(--muted); font-size:12px; margin-left:auto; transition:transform 200ms var(--curve), color 200ms var(--curve); will-change:transform,color; }
+.msg{ min-height:20px; font-weight:700; letter-spacing:.2px; }
+.msg.ok{ color:#5bd59b; }
+.msg.err{ color:#ff6b6b; }
+
+/* KPIs removed with Ledger; minimal chips can stay for settings */
+.kpi{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+.kpi .chip{
+  padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+  background:rgba(255,255,255,.06); font-weight:800;
+}
+
+/* Status Pulse */
+@keyframes pulseOk {
+  0% { transform:scale(1); color:#9fb0c2; }
+  30% { transform:scale(1.08); color:#5bd59b; }
+  100% { transform:scale(1); color:#9fb0c2; }
+}
+@keyframes pulseWarn {
+  0% { transform:scale(1); color:#9fb0c2; }
+  30% { transform:scale(1.08); color:#ffd479; }
+  100% { transform:scale(1); color:#9fb0c2; }
+}
+.pulse-ok{ animation: pulseOk 420ms var(--curve); }
+.pulse-warn{ animation: pulseWarn 420ms var(--curve); }
+
+/* View Transitions (Parallax+Scale) */
+.view{
+  opacity:0; transform:translateY(12px) scale(.995); pointer-events:none;
+  transition:opacity 240ms var(--curve), transform 260ms var(--curve);
+  will-change:opacity,transform;
+}
+.view.active{
+  opacity:1; transform:translateY(0) scale(1); pointer-events:auto;
+}
+
+/* Step Carousel (Warenkorb -> Bezahlen) */
+.carousel{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px;
+}
+.step-enter{
+  opacity:0; transform:translateX(18px) scale(.98);
+  filter:saturate(.9) blur(.4px);
+  transition:opacity 280ms var(--curve), transform 280ms var(--curve), filter 280ms var(--curve);
+}
+.step-enter.step-enter-active{
+  opacity:1; transform:translateX(0) scale(1); filter:saturate(1) blur(0px);
+}
+.step-exit{
+  opacity:1; transform:translateX(0) scale(1);
+  transition:opacity 240ms var(--curve), transform 240ms var(--curve), filter 240ms var(--curve);
+}
+.step-exit.step-exit-active{
+  opacity:0; transform:translateX(-22px) scale(.98);
+  filter:saturate(.85) blur(.5px);
+}
+
+/* Progress Banner */
+.progress-banner{
+  position:fixed; right:16px; top:16px; z-index:999;
+  padding:8px 12px; border-radius:10px; border:1px solid var(--border);
+  background:rgba(255,255,255,.06); font-weight:800; color:var(--text);
+  opacity:0; transform:translateY(-10px); transition:opacity 200ms var(--curve), transform 200ms var(--curve);
+  box-shadow:var(--shadow);
+}
+.progress-banner.show{ opacity:1; transform:translateY(0); }
+
+/* Success Overlay (SVG Check, crisp) */
+.success-overlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.35); backdrop-filter:blur(2px);
+  z-index:9999; opacity:0; pointer-events:none; transition:opacity 160ms var(--curve);
+}
+.success-overlay.show{ opacity:1; pointer-events:auto; }
+.check-wrap{
+  width:140px; height:140px; border-radius:50%;
+  background:rgba(89,219,201,0.18); border:2px solid rgba(89,219,201,.6);
+  display:flex; align-items:center; justify-content:center;
+  transform:scale(.92); opacity:0; transition:transform 220ms var(--curve), opacity 220ms var(--curve);
+  box-shadow:0 10px 34px rgba(89,219,201,.25), inset 0 0 20px rgba(89,219,201,.14);
+}
+.success-overlay.show .check-wrap{ transform:scale(1); opacity:1; }
+.check-svg{ width:76px; height:76px; }
+
+/* Accessibility prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; animation:none !important; }
+}
+</style>
+</head>
+<body>
+<h1>WMS: Das System für dein Event</h1>
+<div class="tabs">
+  <div class="tab active" id="tab-pos">Kasse</div>
+  <div class="tab" id="tab-wallet">Wallet</div>
+  <div class="tab" id="tab-settings">Einstellungen</div>
+</div>
+
+<!-- Progress Banner -->
+<div id="progressBanner" class="progress-banner" aria-live="polite"></div>
+
+<!-- Success Overlay -->
+<div id="successOverlay" class="success-overlay" aria-hidden="true">
+  <div class="check-wrap">
+    <svg class="check-svg" viewBox="0 0 64 64" fill="none">
+      <path d="M16 34 L28 46 L48 18"
+            stroke="#5bd59b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"
+            style="stroke-dasharray:100; stroke-dashoffset:100">
+        <animate attributeName="stroke-dashoffset" from="100" to="0" dur="0.32s" fill="freeze"/>
+      </path>
+    </svg>
+  </div>
+</div>
+
+<!-- VIEW: Kasse -->
+<div id="view-pos" class="view active">
+  <div class="container carousel">
+    <div class="card step-enter step-enter-active" id="step1"><div class="inner">
+      <h2>Warenkorb</h2><p class="sub">Gewählte Artikel, Mengen und Summe</p>
+      <div class="cart" id="cartList"></div>
+      <div class="total"><span>Summe</span><span class="sum" id="cartTotal">0 cp</span></div>
+      <div class="flex" style="margin-top:12px; display:flex; gap:8px; align-items:center">
+        <button class="btn warn" id="btnClear">Leeren</button>
+        <button class="btn primary" id="btnNext">Weiter</button>
+        <span id="msg1" class="msg"></span>
+      </div>
+    </div></div>
+    <div class="card step-enter step-enter-active" id="step1b"><div class="inner">
+      <h2>Artikel auswählen</h2><p class="sub">Kategorien wählen, dann Artikel antippen</p>
+      <div class="cat-tabs" id="catTabs"></div>
+      <div class="grid" id="itemsGrid"></div>
+    </div></div>
+  </div>
+
+  <div class="container carousel" id="step2" style="display:none">
+    <div class="card step-enter" id="scanCard"><div class="inner">
+      <h2>Scanner</h2><p class="sub">Scanne den QR oder gib den Token ein</p>
+      <video id="preview" playsinline></video>
+      <div class="flex" style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+        <button class="btn" id="startScanBtn">Kamera starten</button>
+        <button class="btn" id="stopScanBtn">Stop</button>
+        <button class="btn" id="pickCamBtn">Kamera wählen</button>
+        <span id="scan-status" class="status">Bereit</span>
+      </div>
+      <div class="flex" style="margin-top:10px; display:flex; gap:8px; align-items:center">
+        <input id="token" type="text" placeholder="Token scannen oder eingeben"/>
+        <button class="btn action" id="btnBack">Zurück</button>
+      </div>
+    </div></div>
+    <div class="card step-enter" id="payCard"><div class="inner">
+      <h2>Bezahlung</h2><p class="sub">Überprüfe Warenkorb und buche ab</p>
+      <div class="cart" id="cartListPay"></div>
+      <div class="total"><span>Summe</span><span class="sum" id="cartTotalPay">0 cp</span></div>
+      <div class="flex" style="margin-top:12px; display:flex; gap:8px; align-items:center">
+        <button class="btn primary" id="btnDebitCart">Abbuchen</button>
+        <span id="msg2" class="msg"></span>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- VIEW: Wallet -->
+<div id="view-wallet" class="view" style="display:none">
+  <div class="container" style="grid-template-columns:1fr 1fr;">
+    <div class="card"><div class="inner">
+      <h2>Wallet</h2><p class="sub">Token erstellen, Kontostand prüfen, scannen</p>
+      <div class="row" style="display:flex; gap:8px; flex-wrap:wrap">
+        <input id="tokenWallet" type="text" placeholder="Token"/>
+        <button class="btn action" id="btnLoad" title="Wallet laden">Laden</button>
+        <button class="btn primary" id="btnNew" title="Neues Wallet erstellen">Neu</button>
+      </div>
+      <p style="margin:10px 0 0;">Kontostand: <span id="balance" class="badge">—</span></p>
+      <div style="margin-top:12px">
+        <video id="previewWallet" playsinline></video>
+        <div class="flex" style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <button class="btn" id="startScanBtnWallet" title="Kamera starten">Kamera starten</button>
+          <button class="btn" id="stopScanBtnWallet" title="Kamera stoppen">Stop</button>
+          <button class="btn" id="pickCamBtnWallet" title="Kamera wählen">Kamera wählen</button>
+          <span id="scan-status-wallet" class="status">Bereit</span>
+        </div>
+      </div>
+    </div></div>
+
+    <div class="card"><div class="inner">
+      <h2>Aktionen</h2><p class="sub">Beträge (100 cp = 1 €), Actor/Stand und Buchungsreferenz</p>
+      <div class="quick" aria-label="Schnellbeträge" style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="pill btn" data-amt="100" title="+1 €">+1 €</button>
+        <button class="pill btn" data-amt="500" title="+5 €">+5 €</button>
+        <button class="pill btn" data-amt="1000" title="+10 €">+10 €</button>
+        <button class="pill btn" data-amt="2000" title="+20 €">+20 €</button>
+        <button class="pill btn" data-amt="5000" title="+50 €">+50 €</button>
+      </div>
+
+      <div class="row" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+        <input id="amount" type="number" value="500" min="1" step="1" placeholder="Betrag in cp" title="Betrag in Cent Points"/>
+        <input id="actor" type="text" value="pos-1" placeholder="Actor/Stand" title="Actor/Stand (z. B. pos-1)"/>
+        <input id="reference" type="text" value="cash" placeholder="Referenz" title="Buchungsreferenz"/>
+      </div>
+
+      <div class="actions-bar" style="margin-top:12px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap">
+        <div class="left-actions" style="display:flex; gap:8px">
+          <button class="btn" id="btnClearAmount" title="Betrag leeren">Betrag leeren</button>
+        </div>
+        <div class="right-actions" style="display:flex; gap:8px">
+          <button class="btn primary" id="btnTopup" title="Aufladen">Aufladen</button>
+        </div>
+      </div>
+
+      <div class="actions-bar" style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap">
+        <div class="left-actions" style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn warn" id="btnDebitAmount" title="Eingegebenen Betrag abbuchen">Betrag abbuchen</button>
+          <button class="btn warn" id="btnEmpty" title="Gesamten Kontostand abbuchen">Konto leeren</button>
+        </div>
+        <div class="right-actions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <select id="cpPoint" class="btn" style="padding:10px 14px" title="CP Point auswählen">
+            <option value="pos-1">CP Point: pos-1</option>
+            <option value="pos-2">CP Point: pos-2</option>
+            <option value="event-stand">CP Point: event-stand</option>
+          </select>
+          <div class="flex" style="display:flex; gap:8px">
+            <button class="btn action" id="btnCpPointDebit5" title="CP Point -500 cp">-500 cp</button>
+            <button class="btn action" id="btnCpPointDebit10" title="CP Point -1000 cp">-1000 cp</button>
+          </div>
+        </div>
+      </div>
+
+      <p id="walletMsg" class="msg" style="margin-top:8px"></p>
+    </div></div>
+
+    <div class="card" style="grid-column: 1 / span 2;"><div class="inner">
+      <h2>Transaktionen</h2>
+      <div class="flex" style="display:flex; gap:8px; align-items:center">
+        <button class="btn" id="btnTx" title="Transaktionen aktualisieren">Aktualisieren</button>
+        <span class="status">Letzte 100</span>
+      </div>
+      <pre id="tx"></pre>
+    </div></div>
+  </div>
+</div>
+
+<!-- VIEW: Einstellungen -->
+<div id="view-settings" class="view" style="display:none">
+  <div class="container" style="grid-template-columns:1fr 1fr;">
+    <div class="card"><div class="inner">
+      <h2>Design</h2><p class="sub">Theme umschalten</p>
+      <div class="row" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+        <select id="themeSelect" class="btn" style="padding:10px 14px">
+          <option value="dark">Dark</option>
+          <option value="oled">OLED Minimal</option>
+        </select>
+        <button id="applyTheme" class="btn primary">Anwenden</button>
+        <span id="themeMsg" class="msg"></span>
+      </div>
+      <p class="sub" style="margin-top:8px">OLED Minimal nutzt echtes Schwarz und reduzierte Glaseffekte.</p>
+    </div></div>
+
+    <div class="card"><div class="inner">
+      <h2>Kamera-Verwaltung</h2><p class="sub">POS- und Wallet-Kamera auswählen und speichern</p>
+      <div style="display:grid; grid-template-columns:1fr; gap:12px">
+        <div>
+          <h3 style="margin:0 0 8px; font-size:15px">POS Kamera</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <select id="posCamSelect" class="btn" style="padding:10px 14px; min-width:260px">
+              <option value="">Lade Kameras…</option>
+            </select>
+            <button class="btn" id="posCamRefresh">Aktualisieren</button>
+            <button class="btn primary" id="posCamApply">Übernehmen</button>
+            <button class="btn" id="posCamClear">Löschen</button>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin:0 0 8px; font-size:15px">Wallet Kamera</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <select id="walletCamSelect" class="btn" style="padding:10px 14px; min-width:260px">
+              <option value="">Lade Kameras…</option>
+            </select>
+            <button class="btn" id="walletCamRefresh">Aktualisieren</button>
+            <button class="btn primary" id="walletCamApply">Übernehmen</button>
+            <button class="btn" id="walletCamClear">Löschen</button>
+          </div>
+        </div>
+        <p id="camMsg" class="msg"></p>
+      </div>
+    </div></div>
+
+    <div class="card" style="grid-column:1 / span 2"><div class="inner">
+      <h2>Audio & Sprache</h2><p class="sub">Hinweise und Bestätigungen</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+        <button class="btn" id="btnTestSound">Sound testen</button>
+        <button class="btn" id="btnTestVoice">Stimme testen</button>
+        <span id="avMsg" class="status">Bereit</span>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Popups: Countdown und Kontostand -->
+<div id="payCountdownPopup" class="success-overlay" aria-hidden="true" style="background:rgba(0,0,0,0.42)">
+  <div class="check-wrap" style="width:320px; height:auto; border-radius:16px; padding:18px; background:rgba(0,0,0,0.35);">
+    <div style="font-size:20px; font-weight:900; letter-spacing:.3px; color:#e9eef6; text-align:center">Bezahlen in:- </div>
+    <div id="payCountdownText" style="font-size:34px; font-weight:900; color:#59dbc9; text-align:center; margin-top:8px">  3</div>
+    <div class="sub" style="text-align:center; margin-top:6px; color:#a7b6c6"></div>
+  </div>
+</div>
+
+<div id="balancePopup" class="success-overlay" aria-hidden="true" style="background:rgba(0,0,0,0.42)">
+  <div class="check-wrap" style="width:340px; height:auto; border-radius:16px; padding:18px; background:rgba(0,0,0,0.35);">
+    <div style="font-size:20px; font-weight:900; letter-spacing:.3px; color:#e9eef6; text-align:center">Kontostand</div>
+    <div id="balanceValue" style="font-size:34px; font-weight:900; color:#59dbc9; text-align:center; margin-top:8px">—</div>
+    <div class="sub" style="text-align:center; margin-top:6px; color:#a7b6c6">Popup schließt automatisch</div>
+  </div>
+</div>
+
+<!-- jsQR -->
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<script>
+/* ===== Tab-Steuerung ===== */
+const tabPOS = document.getElementById('tab-pos');
+const tabWallet = document.getElementById('tab-wallet');
+const tabSettings = document.getElementById('tab-settings');
+const viewPOS = document.getElementById('view-pos');
+const viewWallet = document.getElementById('view-wallet');
+const viewSettings = document.getElementById('view-settings');
+
+function setViewActive(el, active){
+  if(active){
+    el.style.display = '';
+    requestAnimationFrame(()=>{ el.classList.add('active'); });
+  }else{
+    el.classList.remove('active');
+    setTimeout(()=>{ el.style.display='none'; }, 240);
+  }
+}
+function banner(text){
+  const progressBanner = document.getElementById('progressBanner');
+  progressBanner.textContent = text;
+  progressBanner.classList.add('show');
+  setTimeout(()=>progressBanner.classList.remove('show'), 1200);
+}
+function showView(name){
+  try{ stopScan(); }catch(e){}
+  try{ stopScanW(); }catch(e){}
+
+  const toPOS = name==='pos';
+  const toWallet = name==='wallet';
+  const toSettings = name==='settings';
+
+  setViewActive(viewPOS, toPOS);
+  setViewActive(viewWallet, toWallet);
+  setViewActive(viewSettings, toSettings);
+
+  tabPOS.classList.toggle('active', toPOS);
+  tabWallet.classList.toggle('active', toWallet);
+  tabSettings.classList.toggle('active', toSettings);
+
+  banner(`${toPOS?'Kasse':toWallet?'Wallet':'Einstellungen'} geöffnet`);
+
+  if(toPOS) autoStartPOS();
+  if(toWallet) autoStartWallet();
+  if(toSettings) refreshCameraLists();
+}
+tabPOS.addEventListener('click', ()=>showView('pos'));
+tabWallet.addEventListener('click', ()=>showView('wallet'));
+tabSettings.addEventListener('click', ()=>showView('settings'));
+
+/* ===== Produkte & Kasse ===== */
+const PRODUCTS = {
+  "Snacks": [ {id:"cake",name:"Kuchen",price:100}, {id:"cookie",name:"Keks",price:80} ],
+  "Getränke": [ {id:"coffee",name:"Kaffee",price:50}, {id:"tea",name:"Tee",price:50}, {id:"water",name:"Wasser",price:30}, {id:"Cola",name:"Coca Cola",price:249}, {id:"sprite",name:"Sprite",price:249} ],
+  "Extras": [ {id:"fruit",name:"Obst",price:60} ]
+};
+let currentCat = Object.keys(PRODUCTS)[0];
+let cart = [];
+const catTabs = document.getElementById('catTabs');
+const itemsGrid = document.getElementById('itemsGrid');
+const cartList = document.getElementById('cartList');
+const cartTotal = document.getElementById('cartTotal');
+const cartListPay = document.getElementById('cartListPay');
+const cartTotalPay = document.getElementById('cartTotalPay');
+const step1 = document.getElementById('step1');
+const step1b = document.getElementById('step1b');
+const step2 = document.getElementById('step2');
+const payCard = document.getElementById('payCard');
+
+function renderCats(){
+  catTabs.innerHTML = '';
+  Object.keys(PRODUCTS).forEach(cat=>{
+    const el=document.createElement('button');
+    el.className='cat-tab btn'+(cat===currentCat?' active':'');
+    el.textContent=cat;
+    el.onclick=()=>{ currentCat=cat; renderCats(); renderItems(); };
+    catTabs.appendChild(el);
+  });
+}
+function renderItems(){
+  itemsGrid.innerHTML='';
+  PRODUCTS[currentCat].forEach(p=>{
+    const el=document.createElement('div');
+    el.className='item';
+    el.innerHTML=`<div class="name">${p.name}</div><div class="price">${p.price} cp</div>`;
+    el.onclick=(evt)=>addToCart(p, evt);
+    itemsGrid.appendChild(el);
+  });
+}
+
+/* Add-to-Cart mit Fly-to-sum Animation */
+function addToCart(p, evt){
+  const i=cart.findIndex(x=>x.id===p.id);
+  if(i>=0) cart[i].qty+=1; else cart.push({id:p.id,name:p.name,price:p.price,qty:1});
+  renderAllCarts();
+
+  // Fly Badge
+  const sumEl=document.getElementById('cartTotal');
+  const rectTarget=sumEl.getBoundingClientRect();
+  const rectSource=(evt?.currentTarget||evt?.target)?.getBoundingClientRect?.() || rectTarget;
+  const badge=document.createElement('div');
+  badge.className='badge-fly';
+  badge.textContent=`+${p.price} cp`;
+  document.body.appendChild(badge);
+  badge.style.left=rectSource.left+rectSource.width/2+'px';
+  badge.style.top=rectSource.top+rectSource.height/2+'px';
+  requestAnimationFrame(()=>{
+    badge.style.transition='transform 500ms var(--curve), opacity 500ms var(--curve)';
+    const dx=rectTarget.left+rectTarget.width/2;
+    const dy=rectTarget.top+rectTarget.height/2;
+    badge.style.transform=`translate(${dx - (rectSource.left+rectSource.width/2)}px, ${dy - (rectSource.top+rectSource.height/2)}px) scale(1.08)`;
+    badge.style.opacity='0';
+    setTimeout(()=>badge.remove(), 520);
+    // bump sum
+    sumEl.classList.add('bump');
+    setTimeout(()=>sumEl.classList.remove('bump'), 180);
+  });
+}
+function changeQty(id,delta){
+  const i=cart.findIndex(x=>x.id===id); if(i<0)return;
+  cart[i].qty+=delta;
+  if(cart[i].qty<=0){
+    // animate removal
+    const row=[...cartList.children, ...cartListPay.children].find(n=>n.dataset?.id===id);
+    if(row){ row.classList.add('removing'); setTimeout(()=>{ cart.splice(i,1); renderAllCarts(); }, 210); }
+    else { cart.splice(i,1); renderAllCarts(); }
+  }else{
+    renderAllCarts();
+  }
+}
+function clearCart(){ cart=[]; renderAllCarts(); }
+
+function renderCart(targetList,targetTotal){
+  targetList.innerHTML=''; let sum=0;
+  cart.forEach(item=>{
+    sum+=item.price*item.qty;
+    const row=document.createElement('div');
+    row.className='cart-item';
+    row.dataset.id=item.id;
+    row.innerHTML=`
+      <div>${item.name} <span style="color:#9fb0c2">(${item.price} cp)</span></div>
+      <div class="qty">
+        <button class="btn" onclick="changeQty('${item.id}',-1)">−</button>
+        <span>${item.qty}</span>
+        <button class="btn" onclick="changeQty('${item.id}',1)">+</button>
+      </div>`;
+    targetList.appendChild(row);
+  });
+  targetTotal.textContent=sum+' cp';
+}
+function renderAllCarts(){ renderCart(cartList,cartTotal); renderCart(cartListPay,cartTotalPay); }
+renderCats(); renderItems(); renderAllCarts();
+
+/* Schritt-Transition „Weiter“ */
+function transitionToPayment(){
+  banner('Weiter zur Bezahlung');
+  [step1, step1b].forEach(el=>{
+    el.classList.remove('step-enter','step-enter-active');
+    el.classList.add('step-exit');
+    requestAnimationFrame(()=>el.classList.add('step-exit-active'));
+  });
+  setTimeout(()=>{
+    step1.style.display='none';
+    step1b.style.display='none';
+    step2.style.display='';
+    // Enter anim für scan & pay cards
+    [document.getElementById('scanCard'), payCard].forEach(el=>{
+      el.classList.remove('step-exit','step-exit-active');
+      el.classList.add('step-enter');
+      requestAnimationFrame(()=>el.classList.add('step-enter-active'));
+    });
+  }, 230);
+}
+
+document.getElementById('btnNext').addEventListener('click', ()=>{
+  const sum=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const m=document.getElementById('msg1');
+  if(sum<=0){ m.textContent='Warenkorb ist leer.'; m.className='msg err'; return; }
+  m.textContent='';
+  renderAllCarts();
+  transitionToPayment();
+  autoStartPOS();
+});
+document.getElementById('btnBack').addEventListener('click', ()=>{
+  banner('Zurück zum Warenkorb');
+  step2.style.display='none';
+  step1.style.display=''; step1b.style.display='';
+  [step1, step1b].forEach(el=>{
+    el.classList.remove('step-exit','step-exit-active');
+    el.classList.add('step-enter');
+    requestAnimationFrame(()=>el.classList.add('step-enter-active'));
+  });
+  stopScan();
+});
+document.getElementById('btnClear').addEventListener('click', clearCart);
+
+/* ===== Scanner-Logik mit Persistenz ===== */
+const STORAGE_KEYS = { posCam:'pos_selected_camera_id', walletCam:'wallet_selected_camera_id', theme:'ui_theme' };
+function saveCameraId(key, id){ try{ if(id) localStorage.setItem(key,id);}catch(e){} }
+function loadCameraId(key){ try{ return localStorage.getItem(key)||null;}catch(e){return null;} }
+function supportsMedia(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
+
+/* ===== Audio ===== */
+let audioCtx=null;
+function getAudioCtx(){
+  if(audioCtx) return audioCtx;
+  try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+  return audioCtx;
+}
+function beep({duration=0.12, frequency=1100, type='sine', volume=0.08, attack=0.01, release=0.08}={}){
+  const ctx=getAudioCtx(); if(!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type; osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+  const now = ctx.currentTime;
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(volume, now + attack);
+  gain.gain.linearRampToValueAtTime(0, now + attack + duration + release);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(now); osc.stop(now + attack + duration + release);
+}
+function deDing(){
+  beep({frequency:740, duration:0.09, volume:0.10, type:'triangle'});
+  setTimeout(()=>beep({frequency:1175, duration:0.12, volume:0.12, type:'sine'}), 100);
+}
+
+/* Status-Puls */
+function pulse(el, kind='ok'){
+  if(!el) return;
+  const cls = kind==='ok' ? 'pulse-ok' : 'pulse-warn';
+  el.classList.remove('pulse-ok','pulse-warn');
+  void el.offsetWidth;
+  el.classList.add(cls);
+  setTimeout(()=>el.classList.remove(cls), 480);
+}
+
+/* Erfolgs-Overlay */
+const successOverlay = document.getElementById('successOverlay');
+function showSuccessOverlay(ms=900){
+  successOverlay.classList.add('show');
+  setTimeout(()=>successOverlay.classList.remove('show'), ms);
+}
+
+/* ===== Pay Popups ===== */
+const payCountdownPopup = document.getElementById('payCountdownPopup');
+const payCountdownText = document.getElementById('payCountdownText');
+const balancePopup = document.getElementById('balancePopup');
+const balanceValue = document.getElementById('balanceValue');
+
+function showPayCountdown(seconds=3){
+  payCountdownText.textContent = String(seconds);
+  payCountdownPopup.classList.add('show');
+  let left = seconds;
+  const interval = setInterval(()=>{
+    left -= 1;
+    payCountdownText.textContent = String(Math.max(left,0));
+    if(left <= 0){
+      clearInterval(interval);
+      payCountdownPopup.classList.remove('show');
+    }
+  }, 1000);
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      payCountdownPopup.classList.remove('show');
+      resolve();
+    }, seconds*1000);
+  });
+}
+function showBalancePopup(balanceCents, ms=3000){
+  balanceValue.textContent = (balanceCents ?? 0) + ' c';
+  balancePopup.classList.add('show');
+  setTimeout(()=>balancePopup.classList.remove('show'), ms);
+}
+
+/* ===== POS Scanner ===== */
+let stream, animId, lastToken=null, lastSeenAt=0;
+const COOLDOWN_MS=2000;
+const video=document.getElementById('preview');
+const statusEl=document.getElementById('scan-status');
+async function listCams(){ const dev=await navigator.mediaDevices.enumerateDevices(); return dev.filter(d=>d.kind==='videoinput'); }
+async function startScan(deviceId=null){
+  if(!supportsMedia()){ statusEl.textContent='Kein Kamera-Zugriff (HTTPS/localhost erforderlich)'; return; }
+  try{
+    const constraints = deviceId ? { video:{ deviceId:{ exact:deviceId } } } : { video:{ facingMode:{ exact:'environment' } } };
+    stream=await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject=stream; await video.play(); statusEl.textContent='Kamera läuft'; pulse(statusEl,'warn'); scanLoop(); if(deviceId) saveCameraId(STORAGE_KEYS.posCam, deviceId);
+  }catch(e){
+    try{
+      const fallback = deviceId ? { video:{ deviceId:{ exact:deviceId } } } : { video:true };
+      stream=await navigator.mediaDevices.getUserMedia(fallback);
+      video.srcObject=stream; await video.play(); statusEl.textContent='Kamera läuft (Fallback)'; pulse(statusEl,'warn'); scanLoop(); if(deviceId) saveCameraId(STORAGE_KEYS.posCam, deviceId);
+    }catch(e2){ statusEl.textContent='Kamera-Fehler: '+e2.name; console.error(e2); }
+  }
+}
+function stopScan(){ if(animId) cancelAnimationFrame(animId); if(stream) stream.getTracks().forEach(t=>t.stop()); video.srcObject=null; statusEl.textContent='Stop'; }
+async function pickCamera(){
+  if(!supportsMedia()){ alert('Kein Kamera-Zugriff (HTTPS/localhost erforderlich)'); return; }
+  const cams=await listCams(); if(!cams.length){ alert('Keine Kameras gefunden'); return; }
+  cams.sort((a,b)=>{ const s=c=>/back|rear|environment/i.test(c.label)?-1:0; return s(a)-s(b); });
+  const choice=prompt('Kameras:\n'+cams.map((c,i)=>`${i}: ${c.label||('Kamera '+i)}`).join('\n')+'\nNummer eingeben:');
+  const idx=parseInt(choice); if(Number.isInteger(idx)&&cams[idx]){ const id=cams[idx].deviceId; stopScan(); saveCameraId(STORAGE_KEYS.posCam,id); startScan(id); }
+}
+
+function currentCartSum(){ return cart.reduce((s,i)=>s+i.price*i.qty,0); }
+
+function scanLoop(){
+  const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
+  const tick=()=>{ if(!video.videoWidth){ animId=requestAnimationFrame(tick); return; }
+    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const res=jsQR(img.data,img.width,img.height); const now=Date.now();
+    if(res && res.data){
+      const token=res.data.trim();
+      if(token!==lastToken || (now-lastSeenAt)>COOLDOWN_MS){
+        lastToken=token; lastSeenAt=now; document.getElementById('token').value=token; statusEl.textContent='Gefunden';
+        pulse(statusEl,'ok'); beep();
+
+        // Auto-Debit im Bezahl-Schritt
+        const payVisible = step2.style.display !== 'none';
+        const sum = currentCartSum();
+        const msg2=document.getElementById('msg2');
+
+        if(payVisible && sum > 0){
+          showPayCountdown(3).then(async ()=>{
+            try{
+              const idk='debit-'+token+'-'+Date.now();
+              const r=await fetch('/api/debit',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({ token, amount_cents:sum, actor:'pos-1', reference:'pos-cart', idempotency_key:idk })
+              });
+              const d=await r.json();
+              if(d.ok){
+                deDing();
+                showBalancePopup(parseInt(d.new_balance_cents||0), 3000);
+                showSuccessOverlay(900);
+                msg2.textContent='Bezahlt: '+sum+' cp. Neuer Kontostand: '+d.new_balance_cents+' c'; msg2.className='msg ok';
+
+                clearCart(); renderAllCarts();
+                try{ stopScan(); }catch(e){}
+                // zurück zum Warenkorb – smooth
+                step2.style.display='none';
+                step1.style.display=''; step1b.style.display='';
+                [step1, step1b].forEach(el=>{
+                  el.classList.remove('step-exit','step-exit-active');
+                  el.classList.add('step-enter');
+                  requestAnimationFrame(()=>el.classList.add('step-enter-active'));
+                });
+                document.getElementById('token').value='';
+                const m=document.getElementById('msg1');
+                if(m){ m.textContent='Zahlung erfolgreich – bereit für den nächsten Kunden'; m.className='msg ok'; setTimeout(()=>{ m.textContent=''; }, 1600); }
+              } else {
+                msg2.textContent='Fehler: '+(d.error||'unbekannt'); msg2.className='msg err';
+                showBalancePopup(0, 2500);
+              }
+            }catch(e){
+              console.error(e);
+              msg2.textContent='Netzwerkfehler'; msg2.className='msg err';
+              showBalancePopup(0, 2500);
+            }
+          });
+        }
+      } else { statusEl.textContent='Gefunden (Wartezeit)'; pulse(statusEl,'warn'); }
+    } else { statusEl.textContent='Suche QR…'; }
+    animId=requestAnimationFrame(tick);
+  }; tick();
+}
+document.getElementById('startScanBtn').addEventListener('click', ()=>{ const s=loadCameraId(STORAGE_KEYS.posCam); if(s) startScan(s); else startScan(); });
+document.getElementById('stopScanBtn').addEventListener('click', stopScan);
+document.getElementById('pickCamBtn').addEventListener('click', pickCamera);
+
+/* Wallet Scanner */
+let streamW, animW, lastW=null, lastWAt=0;
+const videoW=document.getElementById('previewWallet');
+const statusW=document.getElementById('scan-status-wallet');
+async function startScanW(deviceId=null){
+  if(!supportsMedia()){ statusW.textContent='Kein Kamera-Zugriff (HTTPS/localhost erforderlich)'; return; }
+  try{
+    const constraints = deviceId ? { video:{ deviceId:{ exact:deviceId } } } : { video:{ facingMode:{ exact:'environment' } } };
+    streamW=await navigator.mediaDevices.getUserMedia(constraints);
+    videoW.srcObject=streamW; await videoW.play(); statusW.textContent='Kamera läuft'; pulse(statusW,'warn'); scanLoopW(); if(deviceId) saveCameraId(STORAGE_KEYS.walletCam, deviceId);
+  }catch(e){
+    try{
+      const fallback = deviceId ? { video:{ deviceId:{ exact:deviceId } } } : { video:true };
+      streamW=await navigator.mediaDevices.getUserMedia(fallback);
+      videoW.srcObject=streamW; await videoW.play(); statusW.textContent='Kamera läuft (Fallback)'; pulse(statusW,'warn'); scanLoopW(); if(deviceId) saveCameraId(STORAGE_KEYS.walletCam, deviceId);
+    }catch(e2){ statusW.textContent='Kamera-Fehler: '+e2.name; console.error(e2); }
+  }
+}
+function stopScanW(){ if(animW) cancelAnimationFrame(animW); if(streamW) streamW.getTracks().forEach(t=>t.stop()); videoW.srcObject=null; statusW.textContent='Stop'; }
+function scanLoopW(){
+  const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
+  const tick=()=>{ if(!videoW.videoWidth){ animW=requestAnimationFrame(tick); return; }
+    canvas.width=videoW.videoWidth; canvas.height=videoW.videoHeight;
+    ctx.drawImage(videoW,0,0,canvas.width,canvas.height);
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height); const res=jsQR(img.data,img.width,img.height); const now=Date.now();
+    if(res && res.data){ const token=res.data.trim(); if(token!==lastW || (now-lastWAt)>2000){ lastW=token; lastWAt=now; document.getElementById('tokenWallet').value=token; statusW.textContent='Gefunden'; pulse(statusW,'ok'); beep(); } else { statusW.textContent='Gefunden (Wartezeit)'; pulse(statusW,'warn'); } }
+    else { statusW.textContent='Suche QR…'; }
+    animW=requestAnimationFrame(tick);
+  }; tick();
+}
+async function pickCamW(){
+  if(!supportsMedia()){ alert('Kein Kamera-Zugriff (HTTPS/localhost erforderlich)'); return; }
+  const dev=await navigator.mediaDevices.enumerateDevices(); const cams=dev.filter(d=>d.kind==='videoinput');
+  if(!cams.length){ alert('Keine Kameras gefunden'); return; }
+  cams.sort((a,b)=>{ const s=c=>/back|rear|environment/i.test(c.label)?-1:0; return s(a)-s(b); });
+  const choice=prompt('Kameras:\n'+cams.map((c,i)=>`${i}: ${c.label||('Kamera '+i)}`).join('\n')+'\nNummer eingeben:');
+  const idx=parseInt(choice); if(Number.isInteger(idx)&&cams[idx]){ const id=cams[idx].deviceId; stopScanW(); saveCameraId(STORAGE_KEYS.walletCam,id); startScanW(id); }
+}
+function autoStartPOS(){ const saved=loadCameraId(STORAGE_KEYS.posCam); try{ stopScanW(); }catch(e){}; if(saved) startScan(saved); else startScan(); }
+function autoStartWallet(){ const saved=loadCameraId(STORAGE_KEYS.walletCam); try{ stopScan(); }catch(e){}; if(saved) startScanW(saved); else startScanW(); }
+
+document.getElementById('startScanBtnWallet').addEventListener('click', autoStartWallet);
+document.getElementById('stopScanBtnWallet').addEventListener('click', stopScanW);
+document.getElementById('pickCamBtnWallet').addEventListener('click', pickCamW);
+
+/* ===== POS Zahlung (Button bleibt als Alternative bestehen) ===== */
+document.getElementById('btnDebitCart').addEventListener('click', async ()=>{
+  const token=document.getElementById('token').value.trim();
+  const msg2=document.getElementById('msg2');
+  if(!token){ msg2.textContent='Bitte Token scannen/eingeben.'; msg2.className='msg err'; return; }
+  const sum=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  if(sum<=0){ msg2.textContent='Warenkorb leer.'; msg2.className='msg err'; return; }
+  const idk='debit-'+token+'-'+Date.now();
+  try{
+    const r=await fetch('/api/debit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,amount_cents:sum,actor:'pos-1',reference:'pos-cart',idempotency_key:idk})});
+    const d=await r.json();
+    if(d.ok){
+      msg2.textContent='Bezahlt: '+sum+' cp. Neuer Kontostand: '+d.new_balance_cents+' c'; msg2.className='msg ok';
+      deDing(); showSuccessOverlay(950);
+
+      clearCart(); renderAllCarts();
+      try{ stopScan(); }catch(e){}
+      // zurück zum Warenkorb – smooth
+      step2.style.display='none';
+      step1.style.display=''; step1b.style.display='';
+      [step1, step1b].forEach(el=>{
+        el.classList.remove('step-exit','step-exit-active');
+        el.classList.add('step-enter');
+        requestAnimationFrame(()=>el.classList.add('step-enter-active'));
+      });
+      document.getElementById('token').value='';
+      const m=document.getElementById('msg1');
+      if(m){ m.textContent='Zahlung erfolgreich – bereit für den nächsten Kunden'; m.className='msg ok'; setTimeout(()=>{ m.textContent=''; }, 1600); }
+    } else {
+      msg2.textContent='Fehler: '+(d.error||'unbekannt'); msg2.className='msg err';
+    }
+  }catch(e){ console.error(e); msg2.textContent='Netzwerkfehler'; msg2.className='msg err'; }
+});
+
+/* ===== Wallet API & Buttons ===== */
+function $(id){ return document.getElementById(id); }
+async function safeJson(r){ try { return await r.json(); } catch { return null; } }
+function setMsg(el, text, ok=false){ el.textContent=text; el.className='msg'+(ok?' ok':' err'); }
+function clearMsg(el){ el.textContent=''; el.className='msg'; }
+
+document.querySelectorAll('.pill').forEach(el=>{
+  el.addEventListener('click', ()=>{ const amt=parseInt(el.dataset.amt); $('amount').value=amt; });
+});
+$('btnClearAmount').addEventListener('click', ()=>{ $('amount').value=''; clearMsg($('walletMsg')); });
+
+$('btnTopup').addEventListener('click', async ()=>{
+  const token = ($('tokenWallet')||{}).value?.trim() || ($('token')||{}).value?.trim() || '';
+  const amount = parseInt($('amount').value);
+  const actor = $('actor').value.trim() || 'pos-1';
+  const ref = $('reference').value.trim() || 'cash';
+  const msg = $('walletMsg');
+  if(!token) return setMsg(msg,'Bitte Token eingeben oder scannen.');
+  if(!amount || amount<=0) return setMsg(msg,'Bitte gültigen Betrag wählen.');
+  try{
+    const idk='topup-'+token+'-'+Date.now();
+    const r=await fetch('/api/topup',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ token, amount_cents:amount, actor, reference:ref, idempotency_key:idk })
+    });
+    const d=await safeJson(r);
+    if(d?.ok){
+      setMsg(msg,`Aufgeladen: ${amount} cp. Neuer Kontostand: ${d.new_balance_cents} c`, true);
+      const balEl=$('balance'); if(balEl) balEl.textContent=d.new_balance_cents+' c';
+      deDing(); showSuccessOverlay(850);
+    } else setMsg(msg,'Fehler: '+(d?.error||('HTTP '+r.status)));
+  }catch(e){ console.error(e); setMsg(msg,'Netzwerkfehler'); }
+});
+
+$('btnDebitAmount').addEventListener('click', async ()=>{
+  const token = ($('tokenWallet')||{}).value?.trim() || ($('token')||{}).value?.trim() || '';
+  const amount = parseInt($('amount').value);
+  const actor = $('actor').value.trim() || 'pos-1';
+  const ref = $('reference').value.trim() || 'wallet-debit';
+  const msg = $('walletMsg');
+  if(!token) return setMsg(msg,'Bitte Token eingeben oder scannen.');
+  if(!amount || amount<=0) return setMsg(msg,'Bitte gültigen abzubuchenden Betrag eingeben.');
+  try{
+    const idk='debit-'+token+'-'+Date.now();
+    const r=await fetch('/api/debit',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ token, amount_cents:amount, actor, reference:ref, idempotency_key:idk })
+    });
+    const d=await safeJson(r);
+    if(d?.ok){
+      setMsg(msg,`Abgebucht: ${amount} cp. Neuer Kontostand: ${d.new_balance_cents} c`, true);
+      const balEl=$('balance'); if(balEl) balEl.textContent=d.new_balance_cents+' c';
+      deDing(); showSuccessOverlay(850);
+    } else setMsg(msg,'Fehler: '+(d?.error||('HTTP '+r.status)));
+  }catch(e){ console.error(e); setMsg(msg,'Netzwerkfehler'); }
+});
+
+$('btnEmpty').addEventListener('click', async ()=>{
+  const token = ($('tokenWallet')||{}).value?.trim() || '';
+  const msg = $('walletMsg'); const actor = $('actor').value.trim() || 'pos-1';
+  if(!token) return setMsg(msg,'Bitte Token eingeben oder scannen.');
+  if(!confirm('Konto wirklich leeren? Es wird der gesamte Kontostand abgebucht.')) return;
+  try{
+    const rBal=await fetch('/api/wallets/'+encodeURIComponent(token)); const dBal=await safeJson(rBal);
+    if(!dBal || dBal.detail) return setMsg(msg,'Wallet nicht gefunden oder Fehler beim Laden.');
+    const balance=parseInt(dBal.balance_cents||0);
+    if(balance<=0) return setMsg(msg,'Konto ist bereits leer.', true);
+    const idk='empty-'+token+'-'+Date.now();
+    const r=await fetch('/api/debit',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ token, amount_cents:balance, actor, reference:'wallet-empty', idempotency_key:idk })
+    });
+    const d=await safeJson(r);
+    if(d?.ok){
+      setMsg(msg,`Konto geleert. Neuer Kontostand: ${d.new_balance_cents} c`, true);
+      const balEl=$('balance'); if(balEl) balEl.textContent=d.new_balance_cents+' c';
+      deDing(); showSuccessOverlay(900);
+    } else setMsg(msg,'Fehler beim Leeren: '+(d?.error||('HTTP '+r.status)));
+  }catch(e){ console.error(e); setMsg(msg,'Netzwerkfehler'); }
+});
+
+$('btnCpPointDebit5').addEventListener('click', ()=>cpPointDebit(500));
+$('btnCpPointDebit10').addEventListener('click', ()=>cpPointDebit(1000));
+async function cpPointDebit(amount){
+  const token = ($('tokenWallet')||{}).value?.trim() || ($('token')||{}).value?.trim() || '';
+  const actor = $('cpPoint').value || 'pos-1';
+  const msg = $('walletMsg');
+  if(!token) return setMsg(msg,'Bitte Token eingeben oder scannen.');
+  try{
+    const idk='cpPoint-'+actor+'-'+amount+'-'+token+'-'+Date.now();
+    const r=await fetch('/api/debit',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ token, amount_cents:amount, actor, reference:'cp-point', idempotency_key:idk })
+    });
+    const d=await safeJson(r);
+    if(d?.ok){
+      setMsg(msg,`CP Point: -${amount} cp. Neuer Kontostand: ${d.new_balance_cents} c`, true);
+      const balEl=$('balance'); if(balEl) balEl.textContent=d.new_balance_cents+' c';
+      deDing(); showSuccessOverlay(800);
+    } else setMsg(msg,'Fehler: '+(d?.error||('HTTP '+r.status)));
+  }catch(e){ console.error(e); setMsg(msg,'Netzwerkfehler'); }
+}
+
+$('btnNew').addEventListener('click', async ()=>{
+  const r=await fetch('/api/wallets',{method:'POST'}); const d=await safeJson(r);
+  if(d?.token_id){ $('tokenWallet').value=d.token_id; $('balance').textContent=(d.balance_cents||0)+' c'; deDing(); showSuccessOverlay(700); }
+});
+$('btnLoad').addEventListener('click', async ()=>{
+  const t=$('tokenWallet').value.trim(); if(!t) return;
+  const r=await fetch('/api/wallets/'+encodeURIComponent(t)); const d=await safeJson(r);
+  $('balance').textContent=(d?.detail?'—':(d?.balance_cents+' c'));
+});
+$('btnTx').addEventListener('click', async ()=>{
+  const t=$('tokenWallet').value.trim();
+  const url=t?('/api/transactions?token='+encodeURIComponent(t)):'/api/transactions';
+  const r=await fetch(url); const d=await safeJson(r);
+  $('tx').textContent=JSON.stringify(d||{},null,2);
+});
+
+/* ===== Einstellungen: Theme & Kameras ===== */
+const themeSelect = document.getElementById('themeSelect');
+const applyThemeBtn = document.getElementById('applyTheme');
+const themeMsg = document.getElementById('themeMsg');
+
+function applyTheme(theme){
+  const html=document.documentElement;
+  if(theme==='oled'){ html.setAttribute('data-theme','oled'); }
+  else { html.setAttribute('data-theme','dark'); }
+  try{ localStorage.setItem(STORAGE_KEYS.theme, theme); }catch(e){}
+  themeMsg.textContent='Theme übernommen: '+(theme==='oled'?'OLED Minimal':'Dark');
+  themeMsg.className='msg ok';
+  setTimeout(()=>{ themeMsg.textContent=''; themeMsg.className='msg'; }, 1200);
+}
+applyThemeBtn.addEventListener('click', ()=>{
+  const val=themeSelect.value;
+  applyTheme(val);
+});
+
+/* Kamera Verwaltung */
+const posCamSelect = document.getElementById('posCamSelect');
+const walletCamSelect = document.getElementById('walletCamSelect');
+const posCamApply = document.getElementById('posCamApply');
+const walletCamApply = document.getElementById('walletCamApply');
+const posCamRefresh = document.getElementById('posCamRefresh');
+const walletCamRefresh = document.getElementById('walletCamRefresh');
+const posCamClear = document.getElementById('posCamClear');
+const walletCamClear = document.getElementById('walletCamClear');
+const camMsg = document.getElementById('camMsg');
+
+async function populateCamSelect(selectEl, savedId){
+  selectEl.innerHTML = '<option value="">Kamera auswählen…</option>';
+  if(!supportsMedia()){
+    const o=document.createElement('option'); o.value=''; o.textContent='Kein Zugriff (HTTPS benötigt)'; selectEl.appendChild(o); return;
+  }
+  const cams = await listCams();
+  if(!cams.length){
+    const o=document.createElement('option'); o.value=''; o.textContent='Keine Kameras gefunden'; selectEl.appendChild(o); return;
+  }
+  cams.sort((a,b)=>{ const s=c=>/back|rear|environment/i.test(c.label)?-1:0; return s(a)-s(b); });
+  cams.forEach((c,i)=>{
+    const o=document.createElement('option');
+    o.value=c.deviceId;
+    o.textContent=c.label || ('Kamera '+(i+1));
+    if(savedId && c.deviceId===savedId) o.selected=true;
+    selectEl.appendChild(o);
+  });
+}
+async function refreshCameraLists(){
+  const savedPOS = loadCameraId(STORAGE_KEYS.posCam);
+  const savedWAL = loadCameraId(STORAGE_KEYS.walletCam);
+  await populateCamSelect(posCamSelect, savedPOS);
+  await populateCamSelect(walletCamSelect, savedWAL);
+}
+posCamRefresh.addEventListener('click', refreshCameraLists);
+walletCamRefresh.addEventListener('click', refreshCameraLists);
+
+posCamApply.addEventListener('click', ()=>{
+  const id = posCamSelect.value;
+  if(!id){ camMsg.textContent='Bitte eine POS-Kamera auswählen.'; camMsg.className='msg err'; return; }
+  saveCameraId(STORAGE_KEYS.posCam, id);
+  camMsg.textContent='POS-Kamera gespeichert.'; camMsg.className='msg ok';
+  setTimeout(()=>{ camMsg.textContent=''; camMsg.className='msg'; }, 1000);
+});
+walletCamApply.addEventListener('click', ()=>{
+  const id = walletCamSelect.value;
+  if(!id){ camMsg.textContent='Bitte eine Wallet-Kamera auswählen.'; camMsg.className='msg err'; return; }
+  saveCameraId(STORAGE_KEYS.walletCam, id);
+  camMsg.textContent='Wallet-Kamera gespeichert.'; camMsg.className='msg ok';
+  setTimeout(()=>{ camMsg.textContent=''; camMsg.className='msg'; }, 1000);
+});
+posCamClear.addEventListener('click', ()=>{
+  try{ localStorage.removeItem(STORAGE_KEYS.posCam); }catch(e){}
+  camMsg.textContent='POS-Kamera-Einstellung gelöscht.'; camMsg.className='msg ok';
+  refreshCameraLists();
+  setTimeout(()=>{ camMsg.textContent=''; camMsg.className='msg'; }, 1000);
+});
+walletCamClear.addEventListener('click', ()=>{
+  try{ localStorage.removeItem(STORAGE_KEYS.walletCam); }catch(e){}
+  camMsg.textContent='Wallet-Kamera-Einstellung gelöscht.'; camMsg.className='msg ok';
+  refreshCameraLists();
+  setTimeout(()=>{ camMsg.textContent=''; camMsg.className='msg'; }, 1000);
+});
+
+/* ===== Initial ===== */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Theme laden
+  const savedTheme = loadCameraId(STORAGE_KEYS.theme); // reuse util (name is fine)
+  const initialTheme = savedTheme || 'dark';
+  themeSelect.value = initialTheme;
+  applyTheme(initialTheme);
+
+  showView('pos');
+});
+['click','keydown','touchstart'].forEach(evt=>{
+  window.addEventListener(evt, ()=>{ try{ getAudioCtx()?.resume(); }catch(e){} }, { once:true, passive:true });
+});
+
+/* ===== TTS Utilities (Web Speech API) ===== */
+function ttsSupported(){
+  return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+}
+function speak(text, {lang='de-DE', rate=1, pitch=1, volume=1, voiceName=null, queue=false} = {}){
+  if(!ttsSupported()) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang; utter.rate = rate; utter.pitch = pitch; utter.volume = volume;
+  if(voiceName){
+    const v = speechSynthesis.getVoices().find(v=>v.name===voiceName || v.voiceURI===voiceName);
+    if(v) utter.voice = v;
+  }
+  if(!queue) speechSynthesis.cancel();
+  window.speechSynthesis.speak(utter);
+}
+function loadVoicesOnce(){
+  return new Promise(resolve=>{
+    const v = speechSynthesis.getVoices();
+    if(v && v.length) return resolve(v);
+    speechSynthesis.onvoiceschanged = ()=>resolve(speechSynthesis.getVoices());
+  });
+}
+let speakDE = (t, opts={}) => speak(t, {lang:'de-DE', ...opts});
+document.addEventListener('DOMContentLoaded', async ()=>{
+  if(ttsSupported()){
+    const voices = await loadVoicesOnce();
+    const preferred = voices.find(v=>/de-DE/i.test(v.lang) && /Apple|Google|Microsoft|Premium|Enhanced/i.test(v.name));
+    if(preferred){
+      speakDE = (t, opts={}) => speak(t, {lang:'de-DE', voiceName:preferred.name, ...opts});
+    }
+  }
+});
+// iOS/Safari: TTS nach erster User-Geste freischalten
+['click','touchstart','keydown'].forEach(evt=>{
+  window.addEventListener(evt, ()=>{ try{ speechSynthesis.cancel(); speakDE(''); }catch(e){} }, { once:true, passive:true });
+});
+
+/* ===== Einstellungen: Audio Test Buttons ===== */
+document.getElementById('btnTestSound').addEventListener('click', ()=>{
+  deDing();
+  const el=document.getElementById('avMsg'); if(el){ el.textContent='Sound abgespielt'; pulse(el,'ok'); }
+});
+document.getElementById('btnTestVoice').addEventListener('click', ()=>{
+  speakDE('Dies ist ein Test der Sprachausgabe.');
+  const el=document.getElementById('avMsg'); if(el){ el.textContent='Sprachausgabe gestartet'; pulse(el,'ok'); }
+});
+</script>
+</body>
+</html>

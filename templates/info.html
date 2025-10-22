@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Digitales Wertmarken-System – Schnell. Sicher. Kontaktlos.</title>
+<style>
+:root{
+  --bg:#0b0f15; --text:#e9eef6; --muted:#9fb0c2;
+  --accent:#59dbc9; --border:rgba(255,255,255,0.14);
+  --glass:rgba(255,255,255,0.06); --blur:14px;
+}
+
+html,body{
+  height:100%; margin:0;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #132032, #0b0f15 50%),
+    radial-gradient(900px 400px at 100% 10%, rgba(89,219,201,.15), transparent 60%);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+
+a{ color: var(--accent); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+/* Layout */
+.wrapper{
+  min-height:100dvh;
+  display:flex; flex-direction:column;
+}
+
+/* Top Nav */
+.nav{
+  position: sticky; top:0; z-index:50;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(10,12,16,.55), rgba(10,12,16,.25), transparent);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{
+  display:flex; align-items:center; justify-content:space-between;
+  max-width:1080px; margin:0 auto; padding:14px 20px;
+}
+.brand{
+  display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px;
+}
+.brand-dot{
+  width:10px; height:10px; border-radius:50%; background:var(--accent);
+  box-shadow: 0 0 24px rgba(89,219,201,.8), 0 0 8px rgba(89,219,201,.8) inset;
+}
+.nav-actions{
+  display:flex; gap:10px; align-items:center;
+}
+.btn, .chip{
+  border:1px solid var(--border); border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  color:var(--text); padding:10px 14px; font-weight:600; cursor:pointer;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .3s ease;
+}
+.btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 0 0 1px rgba(89,219,201,.15) inset; border-color: rgba(89,219,201,.35); }
+.btn.acc{ background: linear-gradient(180deg, rgba(89,219,201,.25), rgba(89,219,201,.15)); border-color: rgba(89,219,201,.55); }
+.chip{ font-size:12px; opacity:.9; }
+
+/* Hero */
+.hero{
+  position:relative;
+  display:grid; place-items:center; padding:64px 20px 32px;
+}
+.hero-inner{
+  width:min(1080px, 94vw);
+  display:grid; grid-template-columns: 1.05fr .95fr; gap:28px; align-items:center;
+}
+@media (max-width: 900px){
+  .hero-inner{ grid-template-columns: 1fr; }
+}
+.card{
+  border-radius:20px; border:1px solid var(--border);
+  background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.04));
+  backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+}
+.hero-copy{ padding:26px; }
+.kicker{
+  display:inline-flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--muted); margin-bottom:10px;
+}
+.kicker .dot{ width:6px; height:6px; border-radius:999px; background:var(--accent); box-shadow: 0 0 10px rgba(89,219,201,.9); }
+h1{ margin:0 0 10px; font-size:34px; font-weight:900; letter-spacing:.2px; line-height:1.12; }
+.sub{ margin:0 0 16px; color:var(--muted); font-size:14px; }
+.hero-cta{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; }
+
+/* Visual Panel */
+.visual{
+  position:relative; overflow:hidden;
+  padding:0; min-height:280px;
+  display:flex; align-items:stretch; justify-content:stretch;
+}
+.visual-inner{
+  position:relative; width:100%;
+  display:grid; place-items:center; padding:26px;
+}
+.gradient-orb{
+  position:absolute; inset:-20%;
+  background:
+    radial-gradient(600px 300px at 20% 10%, rgba(89,219,201,.14), transparent 60%),
+    radial-gradient(500px 260px at 80% 30%, rgba(120,180,255,.10), transparent 60%),
+    radial-gradient(700px 360px at 50% 90%, rgba(255,140,200,.08), transparent 70%);
+  filter: blur(30px);
+  transform: translateZ(0);
+  animation: float 14s ease-in-out infinite;
+}
+@keyframes float{
+  0%,100%{ transform: translateY(0) translateX(0); }
+  50%{ transform: translateY(-12px) translateX(8px); }
+}
+
+/* Feature Grid */
+.section{
+  padding:30px 20px;
+}
+.container{
+  width:min(1080px, 94vw); margin:0 auto;
+}
+.grid{
+  display:grid; gap:16px; grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+.tile{
+  position:relative; overflow:hidden;
+  padding:20px;
+  transform: translateY(12px); opacity:0;
+  animation: rise .9s cubic-bezier(.2,.8,.2,1) forwards;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes rise{
+  to{ transform: translateY(0); opacity:1; }
+}
+.tile h3{ margin:0 0 6px; font-size:16px; letter-spacing:.2px; }
+.tile p{ margin:0; font-size:13px; color:var(--muted); line-height:1.55; }
+.icon{
+  width:34px; height:34px; border-radius:10px;
+  display:grid; place-items:center; margin-bottom:10px;
+  background: linear-gradient(180deg, rgba(89,219,201,.25), rgba(89,219,201,.08));
+  border:1px solid rgba(89,219,201,.45);
+  box-shadow: 0 6px 18px rgba(89,219,201,.18) inset, 0 4px 14px rgba(0,0,0,.35);
+}
+
+/* Steps */
+.steps{
+  display:grid; gap:16px; grid-template-columns: repeat(3, 1fr);
+  margin-top:8px;
+}
+@media (max-width: 900px){ .steps{ grid-template-columns: 1fr; } }
+.step{
+  padding:18px;
+}
+.step .num{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:28px; height:28px; border-radius:8px;
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--border);
+  font-weight:800; font-size:12px; color:var(--accent);
+  margin-bottom:8px;
+}
+
+/* FAQ */
+.faq{ margin-top:8px; }
+.faq-item{
+  border-radius:14px; border:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  padding:14px 16px;
+}
+.faq-q{
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; user-select:none; gap:12px;
+}
+.faq-q h4{ margin:0; font-size:14px; }
+.faq-a{
+  color:var(--muted); font-size:13px; line-height:1.6;
+  overflow:hidden; max-height:0; transition: max-height .35s ease;
+}
+.faq-item.open .faq-a{ max-height:200px; }
+
+/* Footer */
+.footer{
+  padding:28px 20px 40px; color:var(--muted); font-size:12px; text-align:center;
+}
+
+/* Micro-interactions */
+.card:hover{ border-color: rgba(255,255,255,.22); }
+.tile:hover{ border-color: rgba(89,219,201,.35); }
+.btn:active{ transform: translateY(0); }
+.parallax-hover{
+  transition: transform .35s cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span>Wertmarken Digital</span>
+      </div>
+      <div class="nav-actions">
+        <span class="chip">Sicher • Offline-fähig • Schnell</span>
+        <button class="btn acc" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Features</button>
+        <button class="btn" onclick="document.getElementById('faq').scrollIntoView({behavior:'smooth'})">FAQ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="card hero-copy parallax-hover" data-parallax="3">
+        <div class="kicker"><span class="dot"></span> Für Events, Festivals & Vereine</div>
+        <h1>Digitales Wertmarken‑System<br/>für reibungslose Events</h1>
+        <p class="sub">
+          Keine Papiermarken, keine Zettelwirtschaft. Mit unserer Lösung verwalten Besucherinnen und Besucher
+          ihr Guthaben flexibel – schnell, sicher und komplett kontaktlos.
+        </p>
+        <div class="hero-cta">
+          <button class="btn acc" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">So funktioniert’s</button>
+          <button class="btn" onclick="document.getElementById('faq').scrollIntoView({behavior:'smooth'})">Häufige Fragen</button>
+        </div>
+      </div>
+
+      <div class="card visual parallax-hover" data-parallax="6" aria-hidden="true">
+        <div class="visual-inner">
+          <div class="gradient-orb"></div>
+          <div class="card" style="padding:18px; border-radius:16px; max-width:460px; text-align:center; border:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));">
+            <div style="display:flex; gap:10px; justify-content:center; margin-bottom:10px;">
+              <div class="icon">⚡</div>
+              <div class="icon">🔒</div>
+              <div class="icon">📱</div>
+            </div>
+            <h3 style="margin:0 0 6px;">Schnell. Sicher. Einfach.</h3>
+            <p style="margin:0; color:var(--muted); font-size:13px;">
+              Optimiert für hohe Besucherzahlen, kurze Wege und zufriedene Teams an der Theke.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="grid">
+        <div class="card tile" style="--delay:.05s">
+          <div class="icon">🧩</div>
+          <h3>Modular & anpassbar</h3>
+          <p>Passt sich eurem Event an: Guthaben-Logik, Limits, Mehrwertsteuer, Reportings – alles flexibel.</p>
+        </div>
+        <div class="card tile" style="--delay:.15s">
+          <div class="icon">🔐</div>
+          <h3>Privat & lokal</h3>
+          <p>Gerätegebundene ID, lokal gespeichert. Kein Konto notwendig – Datenschutz by Design.</p>
+        </div>
+        <div class="card tile" style="--delay:.25s">
+          <div class="icon">🚀</div>
+          <h3>Blitzschnelle Abläufe</h3>
+          <p>Weniger Wartezeit, mehr Getränke: optimierte Prozesse für Verkauf und Einlösung.</p>
+        </div>
+        <div class="card tile" style="--delay:.35s">
+          <div class="icon">📊</div>
+          <h3>Transparente Auswertungen</h3>
+          <p>Echtzeit-Übersicht für Orga-Teams: Umsätze, Peaks, Bestände – alles auf einen Blick.</p>
+        </div>
+        <div class="card tile" style="--delay:.45s">
+          <div class="icon">🛠️</div>
+          <h3>Einfache Kassen-Integration</h3>
+          <p>Funktioniert mit existierenden Stationen: Aufladung, Einlösung, Storno – intuitiv bedienbar.</p>
+        </div>
+        <div class="card tile" style="--delay:.55s">
+          <div class="icon">🌐</div>
+          <h3>Offline‑fähig</h3>
+          <p>Stabil auch bei schwachem Netz – perfekt für Outdoor-Events und Hallen mit Funklöchern.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how">
+    <div class="container card" style="padding:20px;">
+      <div class="kicker"><span class="dot"></span> In drei Schritten zum Getränk</div>
+      <h2 style="margin:6px 0 6px; font-size:20px;">So funktioniert’s</h2>
+      <p class="sub" style="margin-bottom:8px;">Einfacher geht’s kaum – für Gäste und Thekenteams.</p>
+      <div class="steps">
+        <div class="card step">
+          <div class="num">1</div>
+          <h3 style="margin:0 0 6px; font-size:16px;">ID generieren</h3>
+          <p class="sub">Beim ersten Öffnen wird eine 10‑stellige Geräte‑ID lokal gespeichert – ganz ohne Registrierung.</p>
+        </div>
+        <div class="card step">
+          <div class="num">2</div>
+          <h3 style="margin:0 0 6px; font-size:16px;">Guthaben aufladen</h3>
+          <p class="sub">An der Kasse wird euer Guthaben mit der ID verknüpft. Bar, Karte oder vorab online – je nach Event.</p>
+        </div>
+        <div class="card step">
+          <div class="num">3</div>
+          <h3 style="margin:0 0 6px; font-size:16px;">Kontaktlos einlösen</h3>
+          <p class="sub">An der Ausgabe wird die ID erkannt, Position abgezogen – fertig. Schnell & fehlerarm.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="kicker"><span class="dot"></span> Noch Fragen?</div>
+      <h2 style="margin:6px 0 10px; font-size:20px;">FAQ</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <div class="faq-q">
+            <h4>Was passiert, wenn ich das Gerät wechsle?</h4>
+            <span>＋</span>
+          </div>
+          <div class="faq-a">
+            <p>Die ID ist gerätegebunden. Für einen Umzug kann das Orga‑Team auf Wunsch Guthaben übertragen (Event‑Regel abhängig).</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <h4>Brauche ich mobiles Internet?</h4>
+            <span>＋</span>
+          </div>
+          <div class="faq-a">
+            <p>Für die Anzeige der Infos nicht. Kassenstationen sind für Offline‑Betrieb vorbereitet – Synchronisation erfolgt bei Verbindung.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <h4>Welche Daten werden gespeichert?</h4>
+            <span>＋</span>
+          </div>
+          <div class="faq-a">
+            <p>Die 10‑stellige ID wird lokal im Browser (localStorage) gespeichert. Es ist keine persönliche Registrierung nötig.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <h4>Kann ich Belege/Transaktionen einsehen?</h4>
+            <span>＋</span>
+          </div>
+          <div class="faq-a">
+            <p>Ja, je nach Event-Konfiguration stehen Transaktionsübersichten und Belege digital bereit.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div class="container card" style="padding:20px; text-align:center;">
+      <h3 style="margin:0 0 6px;">Bereit für bessere Schlangen?</h3>
+      <p class="sub" style="margin-bottom:12px;">Fragt uns für euren nächsten Event – wir beraten bei Setup, Kassen und Teamtraining.</p>
+      <div class="hero-cta" style="justify-content:center;">
+        <a class="btn acc" href="#">Kontakt aufnehmen</a>
+        <a class="btn" href="#">Infos für Orga‑Teams</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    © 2025 Wertmarken Digital • Made for events with ❤️ • code+design friendly
+  </footer>
+</div>
+
+<script>
+// Parallax hover for hero cards
+document.querySelectorAll('.parallax-hover').forEach(el=>{
+  const strength = Number(el.dataset.parallax||4);
+  el.addEventListener('mousemove', e=>{
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - .5;
+    const y = (e.clientY - rect.top) / rect.height - .5;
+    el.style.transform = `perspective(800px) rotateY(${x*strength}deg) rotateX(${ -y*strength }deg) translateY(-1px)`;
+  });
+  el.addEventListener('mouseleave', ()=>{
+    el.style.transform = `perspective(800px) rotateY(0) rotateX(0)`;
+  });
+});
+
+// FAQ accordion
+document.querySelectorAll('.faq-item').forEach(item=>{
+  item.querySelector('.faq-q').addEventListener('click', ()=>{
+    item.classList.toggle('open');
+  });
+});
+
+// Scroll reveal for tiles
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.style.animationPlayState = 'running';
+      observer.unobserve(entry.target);
+    }
+  });
+},{ threshold: 0.18 });
+document.querySelectorAll('.tile').forEach(t=>observer.observe(t));
+</script>
+</body>
+</html>

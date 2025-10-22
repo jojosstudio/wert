@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kassenbuch</title>
+  <link href="https://fonts.googleapis.com/css?family=Inter:400,700,900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0e12;
+      --bg2: #0f1622;
+      --text: #e9eef6;
+      --muted: #a7b6c6;
+      --accent: #59dbc9;
+      --accent-2: #7fe6d9;
+      --border: rgba(255,255,255,0.12);
+      --glass: rgba(255,255,255,0.06);
+      --blur: 14px;
+      --shadow: 0 10px 28px rgba(0,0,0,.35);
+      --curve: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html, body {
+      height: 100%;
+      background: radial-gradient(1200px 600px at 15% 0%, var(--bg2), var(--bg) 50%);
+      color: var(--text);
+      font-family: 'Inter', system-ui, Arial, sans-serif;
+      margin: 0;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: linear-gradient(180deg, rgba(0,0,0,.22), transparent);
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      backdrop-filter: blur(6px);
+    }
+    .brand {
+      font-weight: 900;
+      letter-spacing: .3px;
+      font-size: 18px;
+    }
+    .container {
+      max-width: 820px;
+      margin: 24px auto;
+      padding: 0 18px;
+    }
+    .card {
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.04));
+      backdrop-filter: blur(var(--blur));
+      box-shadow: var(--shadow);
+      transition: transform 220ms var(--curve), box-shadow 220ms var(--curve);
+      margin-bottom: 24px;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 34px rgba(0,0,0,.38);
+    }
+    .inner {
+      padding: 18px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: .3px;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 12px;
+    }
+    .kassenbuch-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .kassenbuch-table th, .kassenbuch-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 16px;
+      vertical-align: middle;
+    }
+    .kassenbuch-table th {
+      color: var(--accent);
+      font-weight: 700;
+      background: rgba(89,219,201,.06);
+    }
+    .kassenbuch-table tr:last-child td {
+      border-bottom: none;
+    }
+    .btn {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.04));
+      color: var(--text);
+      padding: 10px 18px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 12px;
+      transition: transform 160ms var(--curve), background 160ms var(--curve), border-color 160ms var(--curve), box-shadow 160ms var(--curve);
+    }
+    .btn.primary {
+      border-color: rgba(89,219,201,.55);
+      background: linear-gradient(180deg,rgba(89,219,201,.28),rgba(89,219,201,.14));
+      color: #0b0e12;
+    }
+    .btn:hover {
+      transform: translateY(-1px) scale(1.02);
+      box-shadow: 0 8px 24px rgba(0,0,0,.28);
+    }
+    .capital-box {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .capital-label {
+      font-size: 18px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .capital-value {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--accent);
+      background: rgba(89,219,201,0.07);
+      border-radius: 14px;
+      padding: 8px 24px;
+      box-shadow: 0 2px 12px rgba(89,219,201,0.09);
+      letter-spacing: 0.5px;
+      min-width: 130px;
+      text-align: right;
+    }
+    @media (max-width: 600px) {
+      .container { padding: 0 6px; }
+      .inner { padding: 10px; }
+      .kassenbuch-table th, .kassenbuch-table td { font-size: 14px; }
+      .capital-box { flex-direction: column; align-items: flex-start; }
+      .capital-value { font-size: 24px; padding: 6px 14px; min-width: 90px; }
+    }
+
+    /* Hilfsstyles */
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .btn.small {
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .error {
+      color: #ff8b8b;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .info {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .form-hint {
+      width: 100%;
+      margin-top: -4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">Kassenbuch</span>
+    <span class="sub">code+design</span>
+  </div>
+  <div class="container">
+    <div class="card">
+      <div class="inner">
+        <h1>Kassenbuch</h1>
+        <div class="sub">Trage Einnahmen und Ausgaben ein. Das Gesamtkapital wird automatisch berechnet.</div>
+
+        <div id="error" class="error" style="display:none;"></div>
+
+        <div class="capital-box">
+          <span class="capital-label">Gesamtkapital:</span>
+          <span class="capital-value" id="capital">0.00 €</span>
+        </div>
+
+        <table class="kassenbuch-table" id="kassenbuch">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Beschreibung</th>
+              <th>Betrag (€)</th>
+              <th>Saldo (€)</th>
+              <th style="width:140px; text-align:right;">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Zeilen werden hier eingefügt -->
+          </tbody>
+        </table>
+
+        <form id="entry-form" style="margin-top:18px; display:flex; flex-wrap:wrap; gap:10px;">
+          <input type="date" id="date" required style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-family:inherit;">
+          <input type="text" id="desc" placeholder="Beschreibung" required style="flex:2; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-family:inherit;">
+          <input type="number" id="amount" placeholder="Betrag (positiv für Einnahmen, negativ für Ausgaben)" step="0.01" required style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-family:inherit;">
+          <button class="btn primary" type="submit">Hinzufügen</button>
+          <div class="form-hint info">Hinweis: Betrag positiv = Einnahme, negativ = Ausgabe. Die API speichert Typ und Betrag in Cent.</div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('entry-form');
+    const tableBody = document.getElementById('table-body');
+    const capitalElem = document.getElementById('capital');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const errorEl = document.getElementById('error');
+
+    let entries = [];
+    let loading = false;
+
+    function eurosToCents(e) {
+      return Math.round(parseFloat(e) * 100);
+    }
+    function centsToEuros(c) {
+      return (c / 100).toFixed(2);
+    }
+
+    function sortByDateAsc(a, b) {
+      const da = (a.date || a.ts || '').toString();
+      const db = (b.date || b.ts || '').toString();
+      return da.localeCompare(db);
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"'`=\/]/g, function (c) {
+        return ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;',
+          '"': '&quot;', "'": '&#39;', '/': '&#x2F;',
+          '`': '&#x60;', '=': '&#x3D;'
+        })[c];
+      });
+    }
+
+    function setLoading(v) {
+      loading = v;
+      submitBtn.disabled = v;
+      submitBtn.textContent = v ? 'Speichere...' : 'Hinzufügen';
+    }
+
+    function showError(msg) {
+      errorEl.style.display = 'block';
+      errorEl.textContent = msg;
+    }
+    function clearError() {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+
+    async function safeJson(res) {
+      try { return await res.json(); } catch { return null; }
+    }
+
+    async function loadEntries() {
+      clearError();
+      try {
+        setLoading(true);
+        const res = await fetch('/api/admin/cashbook', { credentials: 'same-origin' });
+        if (!res.ok) {
+          const errBody = await safeJson(res);
+          const msg = errBody?.error || ('Fehler beim Laden: HTTP ' + res.status);
+          throw new Error(msg);
+        }
+        const data = await res.json();
+        entries = (data || []).map(e => ({
+          id: e.id,
+          ts: e.ts,
+          date: e.ts ? e.ts.substring(0,10) : '',
+          desc: e.note || '',
+          amount_cents: (e.type === 'expense' ? -1 : 1) * Math.abs(parseInt(e.amount_cents || 0, 10))
+        }));
+        renderTable();
+      } catch (err) {
+        console.error(err);
+        showError('Konnte Kassenbuch nicht laden: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function addEntry({ date, desc, amount }) {
+      const amountCentsAbs = eurosToCents(Math.abs(amount));
+      const type = amount >= 0 ? 'income' : 'expense';
+
+      const payload = {
+        type,
+        amount_cents: amountCentsAbs,
+        note: desc
+      };
+
+      const res = await fetch('/api/admin/cashbook', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await safeJson(res);
+        throw new Error(err?.error || ('Fehler ' + res.status));
+      }
+      const out = await res.json();
+      return out?.id;
+    }
+
+    async function deleteEntry(id) {
+      const res = await fetch('/api/admin/cashbook/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      if (!res.ok) {
+        const err = await safeJson(res);
+        throw new Error(err?.error || ('Fehler ' + res.status));
+      }
+    }
+
+    function renderTable() {
+      tableBody.innerHTML = '';
+      let saldoCents = 0;
+      let capitalCents = 0;
+
+      entries.sort(sortByDateAsc);
+
+      for (const entry of entries) {
+        const amountCents =
+          typeof entry.amount_cents === 'number'
+            ? entry.amount_cents
+            : eurosToCents(entry.amount || 0);
+
+        saldoCents += amountCents;
+        capitalCents += amountCents;
+
+        const tr = document.createElement('tr');
+        const dateStr = (entry.date || (entry.ts ? entry.ts.substring(0, 10) : '') || '');
+        const descStr = entry.desc || '';
+
+        tr.innerHTML = `
+          <td>${dateStr}</td>
+          <td>${escapeHtml(descStr)}</td>
+          <td style="color:${amountCents >= 0 ? 'var(--accent)' : 'var(--muted)'};font-weight:700;">
+            ${centsToEuros(amountCents)}
+          </td>
+          <td style="font-weight:900;">${centsToEuros(saldoCents)}</td>
+          <td class="row-actions">
+            <button class="btn small" data-id="${entry.id}" data-action="delete">Löschen</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      }
+      capitalElem.textContent = centsToEuros(capitalCents) + ' €';
+    }
+
+    // Table actions: delete
+    tableBody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action="delete"]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      if (!id) return;
+      if (!confirm('Diesen Eintrag wirklich löschen?')) return;
+      try {
+        setLoading(true);
+        await deleteEntry(id);
+        await loadEntries();
+      } catch (err) {
+        console.error(err);
+        showError('Eintrag konnte nicht gelöscht werden: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      clearError();
+      const date = document.getElementById('date').value;
+      const desc = document.getElementById('desc').value;
+      const amount = parseFloat(document.getElementById('amount').value);
+
+      if (!date || !desc || isNaN(amount)) {
+        showError('Bitte Datum, Beschreibung und Betrag angeben.');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        await addEntry({ date, desc, amount });
+        await loadEntries();
+        form.reset();
+      } catch (err) {
+        console.error(err);
+        showError('Eintrag konnte nicht gespeichert werden: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Initial: echte Daten laden
+    loadEntries();
+  </script>
+</body>
+</html>

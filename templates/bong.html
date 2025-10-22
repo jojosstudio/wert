@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Event Kundenkarte</title>
+<style>
+:root{
+  --bg:#0c0f13; --text:#e9eef6; --muted:#9fb0c2;
+  --accent:#59dbc9; --border:rgba(255,255,255,0.14);
+  --glass:rgba(255,255,255,0.06); --blur:14px;
+}
+html,body{
+  height:100%; margin:0;
+  background: radial-gradient(1200px 600px at 15% 0%, #0f1622, #0c0f13 50%);
+  color:var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+.container{
+  min-height:100%; display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.card{
+  width:min(480px, 94vw);
+  border-radius:20px; border:1px solid var(--border);
+  background: linear-gradient(180deg, var(--glass), rgba(255,255,255,0.04));
+  backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+}
+.inner{ padding:20px; }
+h1{ margin:0 0 6px; font-size:22px; font-weight:800; letter-spacing:.2px; }
+.sub{ margin:0 0 16px; color:var(--muted); font-size:12px; }
+#qrWrap{
+  background:#ffffff;
+  border:2px solid var(--border);
+  border-radius:14px;
+  width:100%;
+  max-width:320px;
+  aspect-ratio:1 / 1;
+  margin: 0 auto 12px;
+  overflow:hidden;
+  padding: 0;
+  box-sizing: border-box;
+}
+#qrCanvas{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.row{
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  margin-top:12px;
+}
+.badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:999px;
+  border:1px solid var(--border); background:rgba(255,255,255,.06);
+}
+.btn{
+  border:1px solid var(--border); border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  color:var(--text); padding:10px 14px; font-weight:600; cursor:pointer;
+}
+.btn[disabled]{ opacity:.6; cursor:not-allowed; }
+.small{ font-size:12px; color:var(--muted); text-align:center; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="inner">
+      <h1>Event Kundenkarte</h1>
+      <p class="sub">Zeige diesen QR an der Kasse. Die Nummer bleibt auf diesem Gerät immer gleich.</p>
+
+      <div id="qrWrap">
+        <canvas id="qrCanvas"></canvas>
+      </div>
+
+      <div class="row">
+        <span class="badge">ID: <span id="idText">—</span></span>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" id="btnCopy">Nummer kopieren</button>
+          <button class="btn" id="btnShotThenAlert">Screenshot speichern + Hinweis</button>
+        </div>
+      </div>
+
+      <p class="small">Hinweis: Diese Seite speichert deine 10‑stellige ID lokal im Browser (localStorage). Beim ersten Öffnen wird eine ID erzeugt.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Persistente 10-stellige ID
+function loadOrCreateId(){
+  let id = localStorage.getItem('customer_id_10');
+  if(!id){
+    id = Math.floor(Math.random()*1e10).toString().padStart(10,'0');
+    localStorage.setItem('customer_id_10', id);
+  }
+  return id;
+}
+
+// QR-Renderer (CDN qrcodejs)
+window.SimpleQR = {
+  renderCanvas: function(canvasEl, text){
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.onload = function(){
+      var wrap = canvasEl.parentElement;
+      var div = document.createElement('div');
+      div.style.width = '100%'; div.style.maxWidth = '320px';
+      wrap.replaceChild(div, canvasEl);
+      new QRCode(div, { text: text, width: 320, height: 320, colorDark:"#000000", colorLight:"#ffffff", correctLevel: QRCode.CorrectLevel.M });
+    };
+    document.head.appendChild(script);
+  }
+};
+
+// QR als PNG exportieren (aus dem von qrcodejs gerenderten <img> oder Canvas)
+async function exportQrAsPng() {
+  const wrap = document.getElementById('qrWrap');
+  const img = wrap.querySelector('img');
+  if (img && img.src.startsWith('data:image')) {
+    return img.src;
+  }
+  const canvas = wrap.querySelector('canvas');
+  if (canvas) return canvas.toDataURL('image/png');
+  throw new Error('QR nicht gefunden. Bitte kurz warten und erneut versuchen.');
+}
+
+// Download-Helfer
+function downloadDataUrl(filename, dataUrl) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+(function(){
+  const id = loadOrCreateId();
+  document.getElementById('idText').textContent = id;
+  const canvas = document.getElementById('qrCanvas');
+  SimpleQR.renderCanvas(canvas, id);
+
+  // Kopieren
+  document.getElementById('btnCopy').addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(id);
+      alert('Nummer kopiert: ' + id);
+    }catch(e){
+      prompt('Kopiere die Nummer:', id);
+    }
+  });
+
+  // Screenshot speichern, dann Hinweis anzeigen
+  document.getElementById('btnShotThenAlert').addEventListener('click', async ()=>{
+    const btn = document.getElementById('btnShotThenAlert');
+    btn.disabled = true; btn.textContent = 'Erstelle Screenshot...';
+    try{
+      // PNG erzeugen und speichern
+      const dataUrl = await exportQrAsPng();
+      downloadDataUrl(`Event_Kundenkarte_${id}.png`, dataUrl);
+
+      // Hinweis anzeigen (Simuliert "Wallet öffnen" Info)
+      alert(
+ 'Screenshot gespeichert.\n\n' +
+'Google Wallet öffnen.\n' +
+'Auf das Plus-Symbol (+) tippen und „Sonstiges“ auswählen.\n\n' +
+'Schritte:\n' +
+'1) Foto wählen: Das gespeicherte Bild deiner Eventkarte auswählen.\n' +
+'2) Importieren: Das Foto in Google Wallet importieren.\n' +
+'3) Namen setzen: Als Namen „Eventkarte: Wms“ eingeben.\n' +
+'4) Bestätigen: Speichern, damit die Karte erscheint.\n\n' +
+'Ergebnis:\n' +
+'Die Eventkarte ist als Bild in Google Wallet sichtbar.\n\n' +
+'Hinweis:\n' +
+'Leider haben wir keine 230 euro sonst wäre alles mit ein button klick möglich'
+      );
+    }catch(err){
+      alert('Fehler: ' + err.message);
+    }finally{
+      btn.disabled = false; btn.textContent = 'Screenshot speichern + Hinweis';
+    }
+  });
+})();
+</script>
+</body>
+</html>

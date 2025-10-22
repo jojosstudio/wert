@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Konto deaktiviert • POS Wallet</title>
+  <style>
+    :root{
+      --bg:#0b0e12; --bg2:#0f1622; --text:#e9eef6; --muted:#a7b6c6;
+      --accent:#59dbc9; --accent-2:#7fe6d9; --border:rgba(255,255,255,0.12);
+      --glass:rgba(255,255,255,0.06); --blur:14px;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+      --curve:cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html[data-theme="oled"]{
+      --bg:#000000; --bg2:#000000;
+      --text:#f2f2f2; --muted:#9da6af;
+      --accent:#00e5c3; --accent-2:#66f2df;
+      --border:rgba(255,255,255,0.10);
+      --glass:rgba(255,255,255,0.04);
+      --blur:10px;
+      --shadow:0 8px 22px rgba(0,0,0,.55);
+    }
+    html,body{
+      height:100%;
+      background: radial-gradient(1200px 600px at 15% 0%, var(--bg2), var(--bg) 50%);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0;
+    }
+    .wrap{
+      min-height:100%;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px 16px;
+    }
+    .card{
+      width:100%; max-width:520px;
+      border-radius:16px; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));
+      backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      transition:transform 220ms var(--curve), box-shadow 220ms var(--curve);
+    }
+    .card:hover{ transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
+    .inner{ padding:18px; }
+    h1{ margin:0 0 8px; font-size:22px; font-weight:800; letter-spacing:.2px; }
+    p.sub{ margin:0 0 14px; color:var(--muted); font-size:12px; }
+    .msg{ font-weight:800; letter-spacing:.2px; color:#ff8787; margin:8px 0 7px; font-size: 22px;  }
+    .hint{ color:var(--muted); font-size:13px; line-height:1.4; }
+
+    .btn{
+      border:1px solid var(--border); border-radius:12px;
+      background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.04));
+      color:var(--text); padding:10px 14px; font-weight:800; cursor:pointer;
+      transition:transform 160ms var(--curve), background 160ms var(--curve), border-color 160ms var(--curve), box-shadow 160ms var(--curve);
+    }
+    .btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 8px 24px rgba(0,0,0,.28); }
+    .btn:active{ transform:translateY(0) scale(.99); }
+    .btn.primary{ border-color:rgba(89,219,201,.55); background:linear-gradient(180deg,rgba(89,219,201,.28),rgba(89,219,201,.14)); }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .topbar{
+      position:fixed; left:0; right:0; top:0; display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      background:linear-gradient(180deg, rgba(0,0,0,.22), transparent);
+      border-bottom:1px solid rgba(255,255,255,.05);
+      backdrop-filter:blur(6px);
+    }
+    .brand{ font-weight:900; letter-spacing:.3px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">WMS: Das System für dein Event</div>
+    <div class="row">
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="inner">
+        <div class="msg">Dein Account ist deaktiviert.</div>
+        <p class="hint">
+          Wir legen großen Wert auf Sicherheit und eine reibungslose Nutzung unseres Wertmarken‑Systems. Dein Konto wurde daher vorübergehend deaktiviert – zum Beispiel aufgrund geänderter Berechtigungen, organisatorischer Umstellungen oder eines Sicherheitshinweises. Unser WMS (Wertmarken‑System) Team unterstützt dich gerne bei der Reaktivierung. Bitte sende uns deinen Benutzernamen, den betroffenen Bereich (Kasse/Wallet/Admin) sowie eine kurze Beschreibung deines Anliegens, damit wir deinen Zugriff schnell prüfen und – sofern möglich – zeitnah wieder freischalten können.
+        </p>
+        <div class="row" style="margin-top:12px">
+          <a class="btn primary" href="/login">Erneut anmelden</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      // Theme aus localStorage übernehmen (wie im restlichen UI)
+      const KEY = 'ui_theme';
+      const saved = (()=>{ try{ return localStorage.getItem(KEY) || 'dark'; }catch(e){ return 'dark'; }})();
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+  </script>
+</body>
+</html>

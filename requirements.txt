@@ -1,0 +1,12 @@
+opencv-python
+pyzbar
+requests
+qrcode[pil]
+pillow
+python-escpos
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+jinja2
+python-multipart

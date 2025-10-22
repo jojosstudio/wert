@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin • Benutzerverwaltung</title>
+  <style>
+    :root{
+      --bg:#0b0e12; --bg2:#0f1622; --text:#e9eef6; --muted:#a7b6c6;
+      --accent:#59dbc9; --accent-2:#7fe6d9; --border:rgba(255,255,255,0.12);
+      --glass:rgba(255,255,255,0.06); --blur:14px;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+      --curve:cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html[data-theme="oled"]{
+      --bg:#000000; --bg2:#000000;
+      --text:#f2f2f2; --muted:#9da6af;
+      --accent:#00e5c3; --accent-2:#66f2df;
+      --border:rgba(255,255,255,0.10);
+      --glass:rgba(255,255,255,0.04);
+      --blur:10px;
+      --shadow:0 8px 22px rgba(0,0,0,.55);
+    }
+    html,body{
+      height:100%;
+      background: radial-gradient(1200px 600px at 15% 0%, var(--bg2), var(--bg) 50%);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0;
+    }
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:10px 16px;
+      background:linear-gradient(180deg, rgba(0,0,0,.22), transparent);
+      border-bottom:1px solid rgba(255,255,255,.05);
+      backdrop-filter:blur(6px);
+    }
+    .brand{ font-weight:900; letter-spacing:.3px; }
+    .status{ color:var(--muted); font-size:12px; }
+
+    .container{ max-width:1200px; margin:18px auto; padding:0 16px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:1100px){ .container{ grid-template-columns:1fr } }
+
+    .card{
+      border-radius:16px; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));
+      backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      transition:transform 220ms var(--curve), box-shadow 220ms var(--curve), border-color 200ms var(--curve);
+      will-change:transform,box-shadow;
+    }
+    .card:hover{ transform:translateY(-2px); box-shadow:0 12px 34px rgba(0,0,0,.38); }
+    .inner{ padding:16px; }
+    h2{ margin:0 0 10px; font-size:18px; font-weight:800; letter-spacing:.2px; }
+    p.sub{ color:var(--muted); font-size:12px; margin:0 0 12px; }
+
+    .btn{
+      border:1px solid var(--border); border-radius:12px;
+      background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.04));
+      color:var(--text); padding:10px 14px; font-weight:800; cursor:pointer;
+      transition:transform 160ms var(--curve), background 160ms var(--curve), border-color 160ms var(--curve), box-shadow 160ms var(--curve);
+      will-change:transform,box-shadow;
+    }
+    .btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 8px 24px rgba(0,0,0,.28); }
+    .btn:active{ transform:translateY(0) scale(.99); }
+    .btn.primary{ border-color:rgba(89,219,201,.55); background:linear-gradient(180deg,rgba(89,219,201,.28),rgba(89,219,201,.14)); }
+    .btn.warn{ border-color:rgba(255,195,107,.45); }
+    .btn.ghost{ background:transparent; }
+
+    input[type=text], input[type=password], select{
+      width:auto; min-width:200px; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,0.065); color:var(--text); font-size:14px; outline:none;
+      transition:border-color 170ms var(--curve), box-shadow 170ms var(--curve), transform 170ms var(--curve);
+      will-change:transform,box-shadow;
+    }
+    input:focus, select:focus{ border-color:rgba(89,219,201,.55); box-shadow:0 0 0 8px rgba(89,219,201,.14); transform:translateY(-1px); }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .space{ height:10px; }
+
+    /* Benutzerliste als "schöne Tabelle" */
+    .table{ width:100%; border-collapse:separate; border-spacing:0 8px; }
+    .tr{
+      display:grid; grid-template-columns: 1.5fr 0.9fr 0.7fr 1.8fr; gap:10px;
+      padding:10px; border:1px solid var(--border); border-radius:12px;
+      background:rgba(255,255,255,.05); align-items:center;
+      transition:transform 160ms var(--curve), background 160ms var(--curve);
+    }
+    .tr:hover{ transform:translateY(-1px); background:rgba(255,255,255,.07); }
+    .th{ color:var(--muted); font-weight:800; }
+    .chip{
+      display:inline-block; padding:6px 10px; border-radius:10px; border:1px solid var(--border);
+      background:rgba(255,255,255,.06); font-weight:800; font-size:12px;
+    }
+    .chip.ok{ color:#5bd59b; }
+    .chip.warn{ color:#ffd479; }
+    .chip.bad{ color:#ff6b6b; }
+
+    .progress-banner{
+      position:fixed; right:16px; top:16px; z-index:999;
+      padding:8px 12px; border-radius:10px; border:1px solid var(--border);
+      background:rgba(255,255,255,.06); font-weight:800; color:var(--text);
+      opacity:0; transform:translateY(-10px); transition:opacity 200ms var(--curve), transform 200ms var(--curve);
+      box-shadow:var(--shadow);
+    }
+    .progress-banner.show{ opacity:1; transform:translateY(0); }
+
+    @media (prefers-reduced-motion: reduce){
+      *{ transition:none !important; animation:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">POS Wallet • Admin</div>
+    <div class="row">
+      <button class="btn" id="toggleThemeBtn">Theme</button>
+      <a class="btn ghost" href="/logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Überblick -->
+    <div class="card"><div class="inner">
+      <h2>Übersicht</h2>
+      <p class="sub">Eingeloggt als <strong>{{ me.username }}</strong> ({{ me.role }})</p>
+      <div class="row">
+        <span class="chip ok">Status: aktiv</span>
+        <span class="chip">Benutzer: {{ users|length }}</span>
+      </div>
+      <div class="space"></div>
+      <div class="row">
+        <a class="btn" href="/">Zur App</a>
+        <a class="btn" href="/wallets">Wallet-Übersicht</a>
+        <a class="btn" href="/automation">Automation</a>
+        <a class="btn" href="/cashbook">Kassenbuch</a>
+
+      </div>
+    </div></div>
+
+    <!-- Benutzerliste -->
+    <div class="card" style="grid-column:1 / span 2"><div class="inner">
+      <h2>Benutzerverwaltung</h2>
+      <p class="sub">Rolle ändern, aktivieren/deaktivieren, Passwort setzen oder löschen</p>
+
+      <div class="tr th">
+        <div>User</div><div>Rolle</div><div>Active</div><div>Aktion</div>
+      </div>
+
+      {% for u,rec in users.items() %}
+      <div class="tr">
+        <div style="display:flex; align-items:center; gap:8px">
+          <strong>{{ u }}</strong>
+          <span class="chip">{{ rec.role }}</span>
+        </div>
+        <div>
+          {% if rec.role == 'admin' %}
+            <span class="chip ok">ADMIN</span>
+          {% else %}
+            <span class="chip">cashier</span>
+          {% endif %}
+        </div>
+        <div>
+          {% if rec.active %}
+            <span class="chip ok">Ja</span>
+          {% else %}
+            <span class="chip bad">Nein</span>
+          {% endif %}
+        </div>
+        <div>
+          <div class="row">
+            <form method="post" action="/admin/setrole" class="row" style="gap:8px">
+              <input type="hidden" name="username" value="{{ u }}">
+              <select name="role">
+                <option value="cashier" {% if rec.role=='cashier' %}selected{% endif %}>cashier</option>
+                <option value="admin" {% if rec.role=='admin' %}selected{% endif %}>admin</option>
+              </select>
+              <button type="submit" class="btn">Rolle</button>
+            </form>
+
+            <form method="post" action="/admin/setactive" class="row" style="gap:8px">
+              <input type="hidden" name="username" value="{{ u }}">
+              <select name="active">
+                <option value="true" {% if rec.active %}selected{% endif %}>aktiv</option>
+                <option value="false" {% if not rec.active %}selected{% endif %}>inaktiv</option>
+              </select>
+              <button type="submit" class="btn">Status</button>
+            </form>
+
+            <form method="post" action="/admin/resetpass" class="row" style="gap:8px">
+              <input type="hidden" name="username" value="{{ u }}">
+              <input type="password" name="new_password" placeholder="Neues Passwort" required>
+              <button type="submit" class="btn">Passwort setzen</button>
+            </form>
+
+            <form method="post" action="/admin/delete" onsubmit="return confirm('Benutzer {{ u }} wirklich löschen?')" class="row" style="gap:8px">
+              <input type="hidden" name="username" value="{{ u }}">
+              <button type="submit" class="btn warn">Löschen</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="space"></div>
+      <h2>Neuen Benutzer anlegen</h2>
+      <p class="sub">Benutzername, Passwort und Rolle wählen</p>
+      <form method="post" action="/admin/create" class="row">
+        <input type="text" name="username" placeholder="Benutzername" required>
+        <input type="password" name="password" placeholder="Passwort" required>
+        <select name="role">
+          <option value="cashier">cashier</option>
+          <option value="admin">admin</option>
+        </select>
+        <button type="submit" class="btn primary">Anlegen</button>
+      </form>
+    </div></div>
+  </div>
+
+  <div id="progressBanner" class="progress-banner" aria-live="polite"></div>
+
+  <script>
+    function banner(text){
+      const el = document.getElementById('progressBanner');
+      el.textContent = text;
+      el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'), 1200);
+    }
+    // Theme Toggle (Dark / OLED)
+    (function(){
+      const html = document.documentElement;
+      const KEY = 'ui_theme';
+      function getSaved(){ try{ return localStorage.getItem(KEY) || 'dark'; }catch(e){ return 'dark'; } }
+      function setSaved(v){ try{ localStorage.setItem(KEY, v); }catch(e){} }
+      function apply(v){ html.setAttribute('data-theme', v); banner('Theme: ' + (v==='oled'?'OLED Minimal':'Dark')); }
+
+      const current = getSaved();
+      apply(current);
+
+      document.getElementById('toggleThemeBtn').addEventListener('click', ()=>{
+        const next = html.getAttribute('data-theme') === 'oled' ? 'dark' : 'oled';
+        apply(next); setSaved(next);
+      });
+    })();
+  </script>
+</body>
+</html>
